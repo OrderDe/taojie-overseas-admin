@@ -15,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const loggedIn = computed(() => !!token.value && !!user.value)
   const can = (perm) =>
-    !!user.value &&
+    Array.isArray(user.value?.permissions) &&
     (user.value.permissions.includes('*') || user.value.permissions.includes(perm))
 
   async function login(username, password) {

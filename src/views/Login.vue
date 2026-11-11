@@ -49,7 +49,11 @@ async function onSubmit() {
   error.value = ''
   try {
     await auth.login(form.username.trim(), form.password)
-    router.push({ name: firstAllowed() })
+    const target = firstAllowed()
+    if (target === 'login') {
+      throw new Error('该账号没有可访问的后台菜单，请联系管理员分配权限')
+    }
+    await router.push({ name: target })
   } catch (e) {
     error.value = e.message || '登录失败'
   } finally {

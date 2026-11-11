@@ -50,7 +50,8 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (to.meta.public) {
-    return auth.loggedIn ? { path: '/' } : true
+    const target = firstAllowed()
+    return auth.loggedIn && target !== 'login' ? { name: target } : true
   }
   if (!auth.loggedIn) return { name: 'login' }
   if (to.meta.perm && !auth.can(to.meta.perm)) {
