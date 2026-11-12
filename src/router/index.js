@@ -9,6 +9,7 @@ export const MENU = [
   { path: 'categories', title: '分类管理', icon: 'Menu', perm: 'categories' },
   { path: 'brands', title: '品牌管理', icon: 'CollectionTag', perm: 'products' },
   { path: 'rfq', title: '询价列表', icon: 'Message', perm: 'rfq' },
+  { path: 'chat', title: '在线聊天', icon: 'ChatDotRound', perm: 'chat' },
   { path: 'theme-config', title: '主题配置', icon: 'Brush', perm: 'config' },
   { path: 'site-config', title: '站点配置', icon: 'Setting', perm: 'config' },
   { path: 'users', title: '用户与角色', icon: 'UserFilled', perm: 'users' }
@@ -30,6 +31,7 @@ const routes = [
       { path: 'categories', name: 'categories', component: () => import('../views/Categories.vue'), meta: { perm: 'categories' } },
       { path: 'brands', name: 'brands', component: () => import('../views/Brands.vue'), meta: { perm: 'products' } },
       { path: 'rfq', name: 'rfq', component: () => import('../views/Rfqs.vue'), meta: { perm: 'rfq' } },
+      { path: 'chat', name: 'chat', component: () => import('../views/Chat.vue'), meta: { perm: 'chat' } },
       { path: 'theme-config', name: 'theme-config', component: () => import('../views/ThemeConfig.vue'), meta: { perm: 'config' } },
       { path: 'site-config', name: 'site-config', component: () => import('../views/SiteConfig.vue'), meta: { perm: 'config' } },
       { path: 'users', name: 'users', component: () => import('../views/Users.vue'), meta: { perm: 'users' } }

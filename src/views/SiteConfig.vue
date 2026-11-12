@@ -31,6 +31,47 @@
       <el-form-item label="显示询价入口">
         <el-switch v-model="cfg.showRfq" />
       </el-form-item>
+
+      <el-divider content-position="left">首页导航菜单</el-divider>
+      <el-form-item label="导航菜单">
+        <div class="nav-editor">
+          <div v-for="(item, idx) in cfg.navItems" :key="idx" class="nav-row">
+            <el-input v-model="item.label" placeholder="菜单文字，如 礼品专区" style="width: 240px" />
+            <el-input v-model="item.link" placeholder="链接，如 #gifts（可空）" style="width: 240px" />
+            <el-button type="danger" plain @click="removeNav(idx)">删除</el-button>
+          </div>
+          <el-button @click="addNav">+ 添加一行</el-button>
+          <p class="note nav-note">留空（无任何行）时前台使用内置默认导航；链接目前仅保存，前台导航暂不跳转。</p>
+        </div>
+      </el-form-item>
+
+      <el-divider content-position="left">英雄区</el-divider>
+      <el-form-item label="英雄区眉题">
+        <el-input v-model="cfg.heroEyebrow" placeholder="留空则显示主题名" />
+      </el-form-item>
+
+      <el-divider content-position="left">经销商卡</el-divider>
+      <el-form-item label="卡片标题">
+        <el-input v-model="cfg.dealerTitle" placeholder="留空则用前台默认文案" />
+      </el-form-item>
+      <el-form-item label="卡片说明">
+        <el-input v-model="cfg.dealerText" type="textarea" :rows="3" placeholder="留空则用前台默认文案" />
+      </el-form-item>
+      <el-form-item label="按钮文字">
+        <el-input v-model="cfg.dealerButton" placeholder="留空则用前台默认文案" style="width: 260px" />
+      </el-form-item>
+      <el-form-item label="出口热线">
+        <el-input v-model="cfg.hotline" placeholder="如 +86 20 8888 8888" style="width: 260px" />
+      </el-form-item>
+
+      <el-divider content-position="left">品牌故事</el-divider>
+      <el-form-item label="故事标题">
+        <el-input v-model="cfg.storyTitle" placeholder="留空则用前台默认文案" />
+      </el-form-item>
+      <el-form-item label="故事正文">
+        <el-input v-model="cfg.storyText" type="textarea" :rows="4" placeholder="留空则用前台默认文案" />
+      </el-form-item>
+
       <el-form-item>
         <el-button type="primary" :loading="saving" @click="onSave">保存配置</el-button>
         <span class="note">保存后前台刷新即生效（前台启动时读后端配置覆盖本地默认）</span>
@@ -46,8 +87,13 @@ import { api, run } from '../api/client'
 
 const cfg = reactive({
   defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
-  announcement: '', whatsapp: '', email: '', currency: '$', showRfq: true
+  announcement: '', whatsapp: '', email: '', currency: '$', showRfq: true,
+  navItems: [], heroEyebrow: '', dealerTitle: '', dealerText: '',
+  dealerButton: '', hotline: '', storyTitle: '', storyText: ''
 })
+
+function addNav() { cfg.navItems.push({ label: '', link: '' }) }
+function removeNav(idx) { cfg.navItems.splice(idx, 1) }
 const loading = ref(false)
 const saving = ref(false)
 
@@ -59,6 +105,7 @@ async function load() {
       for (const key of Object.keys(cfg)) {
         if (data[key] !== undefined) cfg[key] = data[key]
       }
+      if (!Array.isArray(cfg.navItems)) cfg.navItems = []
     }
   } catch (e) {
     ElMessage.error(e.message)
@@ -86,4 +133,7 @@ onMounted(load)
 <style scoped>
 .cfg-card { max-width: 760px; }
 .note { color: #8a8fa3; font-size: 12px; margin-left: 12px; }
+.nav-editor { width: 100%; }
+.nav-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.nav-note { margin-left: 0; margin-top: 6px; }
 </style>
