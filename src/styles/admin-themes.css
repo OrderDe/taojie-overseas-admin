@@ -1,0 +1,214 @@
+/* 后台外观主题：三套可切换皮肤
+   A 墨绿书房 / B 素纸留白（默认）/ C 夜航控制台
+   通过 <html data-admin-theme="a|b|c"> 切换，变量同时驱动 --adm-* 与 Element Plus 的 --el-*。 */
+
+/* ---------- 通用（与具体主题无关） ---------- */
+:root {
+  --adm-font: Manrope, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --adm-font-size: 15px;
+  --adm-title-size: 22px;
+  --adm-title-weight: 800;
+}
+
+/* 全局表面与表格密度：不依赖具体主题的部分 */
+body {
+  font-family: var(--adm-font);
+  font-size: var(--adm-font-size);
+  background: var(--adm-page-bg);
+  color: var(--adm-text);
+}
+.el-table { --el-table-cell-padding-y: 10px; }
+.el-table .cell { line-height: 1.55; }
+
+/* ================================================================
+   B · 素纸留白（默认）
+   白侧栏、近黑白灰、主按钮近黑、小圆角、细发丝边框、留白大
+   ================================================================ */
+:root,
+:root[data-admin-theme='b'] {
+  --adm-page-bg: #f7f7f5;
+  --adm-surface: #ffffff;
+  --adm-surface-2: #f2f2f0;
+  --adm-sidebar-bg: #ffffff;
+  --adm-sidebar-text: #55565c;
+  --adm-sidebar-active-bg: #17181c;
+  --adm-sidebar-active-text: #ffffff;
+  --adm-sidebar-hover-bg: #f0f0ee;
+  --adm-brand-mark-bg: #17181c;
+  --adm-text: #17181c;
+  --adm-text-2: #55565c;
+  --adm-text-3: #8f9096;
+  --adm-border: #e4e4e0;
+  --adm-border-strong: #d4d4cf;
+  --adm-primary: #17181c;
+  --adm-primary-light-3: #565861;
+  --adm-primary-light-5: #8b8c93;
+  --adm-primary-light-8: #d6d6d3;
+  --adm-primary-light-9: #ececea;
+  --adm-primary-dark-2: #000000;
+  --adm-radius: 8px;
+  --adm-shadow: 0 1px 2px rgba(23, 24, 28, 0.05);
+  --adm-shadow-pop: 0 12px 32px rgba(23, 24, 28, 0.14);
+
+  /* Element Plus */
+  --el-color-primary: var(--adm-primary);
+  --el-color-primary-light-3: var(--adm-primary-light-3);
+  --el-color-primary-light-5: var(--adm-primary-light-5);
+  --el-color-primary-light-7: var(--adm-primary-light-8);
+  --el-color-primary-light-8: var(--adm-primary-light-8);
+  --el-color-primary-light-9: var(--adm-primary-light-9);
+  --el-color-primary-dark-2: var(--adm-primary-dark-2);
+  --el-bg-color: var(--adm-surface);
+  --el-bg-color-page: var(--adm-page-bg);
+  --el-bg-color-overlay: var(--adm-surface);
+  --el-text-color-primary: var(--adm-text);
+  --el-text-color-regular: var(--adm-text-2);
+  --el-text-color-secondary: var(--adm-text-3);
+  --el-text-color-placeholder: var(--adm-text-3);
+  --el-border-color: var(--adm-border-strong);
+  --el-border-color-light: var(--adm-border);
+  --el-border-color-lighter: var(--adm-border);
+  --el-border-color-extra-light: var(--adm-border);
+  --el-fill-color-blank: var(--adm-surface);
+  --el-fill-color-light: var(--adm-surface-2);
+  --el-fill-color-lighter: var(--adm-surface-2);
+  --el-border-radius-base: var(--adm-radius);
+  --el-border-radius-small: calc(var(--adm-radius) - 2px);
+  --el-box-shadow-light: var(--adm-shadow-pop);
+  --el-box-shadow-lighter: var(--adm-shadow);
+  --el-font-size-base: 15px;
+  --el-component-size: 38px;
+}
+
+/* ================================================================
+   A · 墨绿书房
+   深绿侧边栏、米白内容底、绿色主色、圆角偏大、卡片柔和投影
+   ================================================================ */
+:root[data-admin-theme='a'] {
+  --adm-page-bg: #f3efe4;
+  --adm-surface: #fffdf6;
+  --adm-surface-2: #ece7d6;
+  --adm-sidebar-bg: #173d2c;
+  --adm-sidebar-text: #b9cec0;
+  --adm-sidebar-active-bg: #2e6b4d;
+  --adm-sidebar-active-text: #ffffff;
+  --adm-sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+  --adm-brand-mark-bg: #2e6b4d;
+  --adm-text: #21302a;
+  --adm-text-2: #4d5d54;
+  --adm-text-3: #84958a;
+  --adm-border: #e0dac6;
+  --adm-border-strong: #cfc8ac;
+  --adm-primary: #2e6b4d;
+  --adm-primary-light-3: #63967d;
+  --adm-primary-light-5: #97b8a6;
+  --adm-primary-light-8: #d2e0d7;
+  --adm-primary-light-9: #e8efe9;
+  --adm-primary-dark-2: #25563e;
+  --adm-radius: 14px;
+  --adm-shadow: 0 6px 20px rgba(35, 62, 48, 0.10);
+  --adm-shadow-pop: 0 16px 40px rgba(35, 62, 48, 0.18);
+
+  /* Element Plus */
+  --el-color-primary: var(--adm-primary);
+  --el-color-primary-light-3: var(--adm-primary-light-3);
+  --el-color-primary-light-5: var(--adm-primary-light-5);
+  --el-color-primary-light-7: var(--adm-primary-light-8);
+  --el-color-primary-light-8: var(--adm-primary-light-8);
+  --el-color-primary-light-9: var(--adm-primary-light-9);
+  --el-color-primary-dark-2: var(--adm-primary-dark-2);
+  --el-bg-color: var(--adm-surface);
+  --el-bg-color-page: var(--adm-page-bg);
+  --el-bg-color-overlay: var(--adm-surface);
+  --el-text-color-primary: var(--adm-text);
+  --el-text-color-regular: var(--adm-text-2);
+  --el-text-color-secondary: var(--adm-text-3);
+  --el-text-color-placeholder: var(--adm-text-3);
+  --el-border-color: var(--adm-border-strong);
+  --el-border-color-light: var(--adm-border);
+  --el-border-color-lighter: var(--adm-border);
+  --el-border-color-extra-light: var(--adm-border);
+  --el-fill-color-blank: var(--adm-surface);
+  --el-fill-color-light: var(--adm-surface-2);
+  --el-fill-color-lighter: var(--adm-surface-2);
+  --el-border-radius-base: var(--adm-radius);
+  --el-border-radius-small: calc(var(--adm-radius) - 4px);
+  --el-box-shadow-light: var(--adm-shadow-pop);
+  --el-box-shadow-lighter: var(--adm-shadow);
+  --el-font-size-base: 15px;
+  --el-component-size: 38px;
+}
+
+/* ================================================================
+   C · 夜航控制台
+   全深色、深色侧栏、薄荷绿主色/点缀、深色卡片带内高光与投影
+   ================================================================ */
+:root[data-admin-theme='c'] {
+  --adm-page-bg: #0b100e;
+  --adm-surface: #141a17;
+  --adm-surface-2: #1c2420;
+  --adm-sidebar-bg: #0e130f;
+  --adm-sidebar-text: #9db3a8;
+  --adm-sidebar-active-bg: #1d2b23;
+  --adm-sidebar-active-text: #5eead4;
+  --adm-sidebar-hover-bg: rgba(94, 234, 212, 0.07);
+  --adm-brand-mark-bg: #5eead4;
+  --adm-text: #e8f0ec;
+  --adm-text-2: #a9bcb1;
+  --adm-text-3: #6f8478;
+  --adm-border: #263129;
+  --adm-border-strong: #35443a;
+  --adm-primary: #2dd4bf;
+  --adm-primary-light-3: #1d9484;
+  --adm-primary-light-5: #14665c;
+  --adm-primary-light-8: #123f39;
+  --adm-primary-light-9: #102e2a;
+  --adm-primary-dark-2: #5eead4;
+  --adm-radius: 10px;
+  --adm-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --adm-shadow-pop: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 44px rgba(0, 0, 0, 0.55);
+
+  /* Element Plus */
+  --el-color-primary: var(--adm-primary);
+  --el-color-primary-light-3: var(--adm-primary-light-3);
+  --el-color-primary-light-5: var(--adm-primary-light-5);
+  --el-color-primary-light-7: var(--adm-primary-light-8);
+  --el-color-primary-light-8: var(--adm-primary-light-8);
+  --el-color-primary-light-9: var(--adm-primary-light-9);
+  --el-color-primary-dark-2: var(--adm-primary-dark-2);
+  --el-bg-color: var(--adm-surface);
+  --el-bg-color-page: var(--adm-page-bg);
+  --el-bg-color-overlay: var(--adm-surface-2);
+  --el-text-color-primary: var(--adm-text);
+  --el-text-color-regular: var(--adm-text-2);
+  --el-text-color-secondary: var(--adm-text-3);
+  --el-text-color-placeholder: var(--adm-text-3);
+  --el-border-color: var(--adm-border-strong);
+  --el-border-color-light: var(--adm-border);
+  --el-border-color-lighter: var(--adm-border);
+  --el-border-color-extra-light: var(--adm-border);
+  --el-fill-color-blank: var(--adm-surface);
+  --el-fill-color-light: var(--adm-surface-2);
+  --el-fill-color-lighter: var(--adm-surface-2);
+  --el-fill-color: #232d28;
+  --el-fill-color-dark: #2b3831;
+  --el-fill-color-darker: #334239;
+  --el-disabled-bg-color: #1a211d;
+  --el-disabled-text-color: #5c6f64;
+  --el-disabled-border-color: var(--adm-border);
+  --el-mask-color: rgba(4, 8, 6, 0.8);
+  --el-border-radius-base: var(--adm-radius);
+  --el-border-radius-small: calc(var(--adm-radius) - 2px);
+  --el-box-shadow: var(--adm-shadow-pop);
+  --el-box-shadow-light: var(--adm-shadow-pop);
+  --el-box-shadow-lighter: var(--adm-shadow);
+  --el-box-shadow-dark: var(--adm-shadow-pop);
+  --el-font-size-base: 15px;
+  --el-component-size: 38px;
+}
+
+/* 品牌名：深色侧栏的两套（A 绿栏 / C 暗栏）用亮字，B 白栏用正文色 */
+:root[data-admin-theme='a'] .brand-name,
+:root[data-admin-theme='c'] .brand-name { color: #fff; }
+/* 主题 C 的品牌标记：深底上用深色字压薄荷绿块 */
+:root[data-admin-theme='c'] .brand-mark { color: #0b100e; }

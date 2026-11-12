@@ -4,5 +4,10 @@
 
 <style>
 html, body, #app { height: 100%; margin: 0; }
-body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f6fa; }
+body {
+  font-family: var(--adm-font);
+  font-size: var(--adm-font-size);
+  background: var(--adm-page-bg);
+  color: var(--adm-text);
+}
 </style>

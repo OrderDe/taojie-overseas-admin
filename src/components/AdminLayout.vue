@@ -11,9 +11,9 @@
       <el-menu
         :default-active="activePath"
         router
-        background-color="#14142b"
-        text-color="#b9bdd6"
-        active-text-color="#ffffff"
+        background-color="transparent"
+        text-color="var(--adm-sidebar-text)"
+        active-text-color="var(--adm-sidebar-active-text)"
       >
         <el-menu-item
           v-for="item in visibleMenu"
@@ -29,6 +29,7 @@
       <el-header class="header">
         <span class="page-title">{{ currentTitle }}</span>
         <div class="header-right">
+          <ThemeSwitcher />
           <span class="who" v-if="auth.user">
             {{ auth.user.displayName || auth.user.username }} · {{ auth.user.roleName || '' }}
           </span>
@@ -47,6 +48,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MENU } from '../router'
 import { useAuthStore } from '../stores/auth'
+import ThemeSwitcher from './ThemeSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -67,20 +69,27 @@ async function onLogout() {
 
 <style scoped>
 .layout { height: 100vh; }
-.aside { background: #14142b; }
-.brand { display: flex; align-items: center; gap: 10px; padding: 18px 16px 14px; }
+.aside {
+  background: var(--adm-sidebar-bg);
+  border-right: 1px solid var(--adm-border);
+  transition: background-color .25s ease;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px 16px; }
 .brand-mark {
-  width: 36px; height: 36px; border-radius: 9px; background: #4f46e5; color: #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;
+  width: 38px; height: 38px; border-radius: var(--adm-radius); background: var(--adm-brand-mark-bg); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0;
 }
-.brand-name { color: #fff; font-size: 15px; font-weight: 600; }
-.brand-sub { color: #8b90ad; font-size: 12px; margin-top: 2px; }
-.aside :deep(.el-menu) { border-right: none; }
+.brand-name { color: var(--adm-text); font-size: 16px; font-weight: 700; }
+.brand-sub { color: var(--adm-sidebar-text); font-size: 12px; margin-top: 2px; }
+.aside :deep(.el-menu) { border-right: none; padding: 4px 10px; }
+.aside :deep(.el-menu-item) { border-radius: var(--adm-radius); margin-bottom: 2px; }
+.aside :deep(.el-menu-item:hover) { background: var(--adm-sidebar-hover-bg); }
+.aside :deep(.el-menu-item.is-active) { background: var(--adm-sidebar-active-bg); font-weight: 600; }
 .header {
-  background: #fff; display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid #e6e8f0;
+  background: var(--adm-surface); display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--adm-border); height: 64px;
 }
-.page-title { font-size: 16px; font-weight: 600; color: #1f2430; }
-.header-right { display: flex; align-items: center; gap: 12px; }
-.who { color: #6b7186; font-size: 13px; }
+.page-title { font-size: var(--adm-title-size); font-weight: var(--adm-title-weight); color: var(--adm-text); letter-spacing: .2px; }
+.header-right { display: flex; align-items: center; gap: 14px; }
+.who { color: var(--adm-text-2); font-size: 13px; }
 </style>

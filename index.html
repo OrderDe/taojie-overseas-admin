@@ -1,9 +1,26 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-admin-theme="b">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>淘街海外商城 · 管理后台</title>
+    <script>
+      // 在样式生效前先定下后台外观主题，避免首帧闪烁；与 src/utils/adminTheme.js 保持一致
+      (function () {
+        var t = 'b'
+        try {
+          var saved = localStorage.getItem('tj-admin-theme')
+          if (saved === 'a' || saved === 'b' || saved === 'c') t = saved
+        } catch (e) {}
+        document.documentElement.dataset.adminTheme = t
+      })()
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="app"></div>

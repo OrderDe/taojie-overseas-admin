@@ -10,11 +10,11 @@
           <el-option label="Português" value="pt" />
         </el-select>
       </el-form-item>
-      <el-form-item label="英雄区标题">
-        <el-input v-model="cfg.heroTitle" />
+      <el-form-item label="首页大标题">
+        <el-input v-model="cfg.heroTitle" placeholder="首页最上方那行最大的字，留空用主题默认文案" />
       </el-form-item>
-      <el-form-item label="英雄区副标题">
-        <el-input v-model="cfg.heroSubtitle" />
+      <el-form-item label="首页副标题">
+        <el-input v-model="cfg.heroSubtitle" placeholder="大标题下面那行说明文字，留空用主题默认文案" />
       </el-form-item>
       <el-form-item label="公告">
         <el-input v-model="cfg.announcement" />
@@ -45,9 +45,9 @@
         </div>
       </el-form-item>
 
-      <el-divider content-position="left">英雄区</el-divider>
-      <el-form-item label="英雄区眉题">
-        <el-input v-model="cfg.heroEyebrow" placeholder="留空则显示主题名" />
+      <el-divider content-position="left">首页顶部（其他）</el-divider>
+      <el-form-item label="大标题上方小字">
+        <el-input v-model="cfg.heroEyebrow" placeholder="如 F · EDITORIAL WHOLESALE，留空则显示主题名" />
       </el-form-item>
 
       <el-divider content-position="left">经销商卡</el-divider>
@@ -64,11 +64,11 @@
         <el-input v-model="cfg.hotline" placeholder="如 +86 20 8888 8888" style="width: 260px" />
       </el-form-item>
 
-      <el-divider content-position="left">品牌故事</el-divider>
-      <el-form-item label="故事标题">
+      <el-divider content-position="left">首页品牌介绍</el-divider>
+      <el-form-item label="介绍标题">
         <el-input v-model="cfg.storyTitle" placeholder="留空则用前台默认文案" />
       </el-form-item>
-      <el-form-item label="故事正文">
+      <el-form-item label="介绍正文">
         <el-input v-model="cfg.storyText" type="textarea" :rows="4" placeholder="留空则用前台默认文案" />
       </el-form-item>
 
@@ -132,7 +132,7 @@ onMounted(load)
 
 <style scoped>
 .cfg-card { max-width: 760px; }
-.note { color: #8a8fa3; font-size: 12px; margin-left: 12px; }
+.note { color: var(--adm-text-3); font-size: 12px; margin-left: 12px; }
 .nav-editor { width: 100%; }
 .nav-row { display: flex; gap: 8px; margin-bottom: 8px; }
 .nav-note { margin-left: 0; margin-top: 6px; }

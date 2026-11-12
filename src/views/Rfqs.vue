@@ -49,5 +49,5 @@ onMounted(load)
 
 <style scoped>
 .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
-.note { color: #8a8fa3; font-size: 13px; }
+.note { color: var(--adm-text-3); font-size: 13px; }
 </style>

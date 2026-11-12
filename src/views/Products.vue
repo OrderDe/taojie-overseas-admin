@@ -286,6 +286,6 @@ onMounted(loadAll)
 <style scoped>
 .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .thumb { width: 52px; height: 40px; border-radius: 4px; }
-.no-img { color: #a3a8bb; font-size: 12px; }
+.no-img { color: var(--adm-text-3); font-size: 12px; }
 .pager { margin-top: 14px; justify-content: flex-end; }
 </style>

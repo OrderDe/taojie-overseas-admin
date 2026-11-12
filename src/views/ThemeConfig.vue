@@ -80,6 +80,6 @@ onMounted(load)
 
 <style scoped>
 .theme-card { max-width: 760px; }
-.title { color: #1f2430; font-size: 16px; font-weight: 600; }
-.intro { margin: 8px 0 0; color: #8a8fa3; font-size: 13px; line-height: 1.6; }
+.title { color: var(--adm-text); font-size: 16px; font-weight: 600; }
+.intro { margin: 8px 0 0; color: var(--adm-text-3); font-size: 13px; line-height: 1.6; }
 </style>

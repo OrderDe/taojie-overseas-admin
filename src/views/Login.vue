@@ -1,5 +1,6 @@
 <template>
   <div class="login-wrap">
+    <div class="login-switcher"><ThemeSwitcher /></div>
     <el-card class="login-card">
       <div class="login-brand">
         <div class="brand-mark">淘</div>
@@ -36,6 +37,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { firstAllowed } from '../router'
+import ThemeSwitcher from '../components/ThemeSwitcher.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -65,15 +67,19 @@ async function onSubmit() {
 <style scoped>
 .login-wrap {
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #14142b 0%, #23234d 55%, #4f46e5 130%);
+  background: var(--adm-page-bg); position: relative;
 }
-.login-card { width: 380px; border-radius: 14px; padding: 8px 6px; }
+.login-switcher { position: absolute; top: 20px; right: 24px; }
+.login-card {
+  width: 392px; border-radius: calc(var(--adm-radius) + 4px); padding: 10px 8px;
+  border: 1px solid var(--adm-border); box-shadow: var(--adm-shadow-pop);
+}
 .login-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
 .brand-mark {
-  width: 38px; height: 38px; border-radius: 10px; background: #4f46e5; color: #fff;
+  width: 40px; height: 40px; border-radius: var(--adm-radius); background: var(--adm-brand-mark-bg); color: #fff;
   display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 700;
 }
-.login-title { font-size: 16px; font-weight: 600; color: #1f2430; }
+.login-title { font-size: 17px; font-weight: 700; color: var(--adm-text); }
 .login-btn { width: 100%; margin-top: 4px; }
-.hint { color: #8a8fa3; font-size: 12px; line-height: 1.6; margin: 14px 0 0; }
+.hint { color: var(--adm-text-3); font-size: 12px; line-height: 1.6; margin: 14px 0 0; }
 </style>

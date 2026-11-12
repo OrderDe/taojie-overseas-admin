@@ -153,5 +153,5 @@ onMounted(load)
 <style scoped>
 .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
 .thumb { width: 56px; height: 36px; }
-.no-img { color: #a3a8bb; font-size: 12px; }
+.no-img { color: var(--adm-text-3); font-size: 12px; }
 </style>

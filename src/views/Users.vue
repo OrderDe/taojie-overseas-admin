@@ -266,7 +266,7 @@ onMounted(load)
 <style scoped>
 .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
 .block { margin-bottom: 22px; }
-.section-title { font-size: 15px; font-weight: 600; margin: 6px 0 12px; color: #1f2430; }
+.section-title { font-size: 15px; font-weight: 600; margin: 6px 0 12px; color: var(--adm-text); }
 .perm-tag { margin-right: 6px; margin-bottom: 2px; }
 .perm-check { display: block; margin-bottom: 6px; }
 .note { color: #b45309; font-size: 12px; margin-top: 6px; }

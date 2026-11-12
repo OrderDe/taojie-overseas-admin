@@ -58,5 +58,5 @@ function beforeUpload(file) {
 
 <style scoped>
 .img-field { display: flex; gap: 8px; width: 100%; }
-.preview { width: 120px; height: 90px; margin-top: 8px; border: 1px solid #e6e8f0; border-radius: 6px; }
+.preview { width: 120px; height: 90px; margin-top: 8px; border: 1px solid var(--adm-border); border-radius: 6px; }
 </style>
