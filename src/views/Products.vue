@@ -141,6 +141,9 @@
         <el-form-item label="图片">
           <ImageField v-model="form.image" />
         </el-form-item>
+        <el-form-item label="视频">
+          <VideoField v-model="form.video" />
+        </el-form-item>
         <el-form-item label="简介">
           <el-input v-model="form.blurb" type="textarea" :rows="2" />
         </el-form-item>
@@ -171,6 +174,7 @@ import { api, run } from '../api/client'
 import { displayName, emptyNames, specsToText, textToSpecs } from '../utils/names'
 import NamesFields from '../components/NamesFields.vue'
 import ImageField from '../components/ImageField.vue'
+import VideoField from '../components/VideoField.vue'
 
 const products = ref([])
 const categories = ref([])
@@ -190,7 +194,7 @@ const form = reactive(blankForm())
 function blankForm() {
   return {
     id: null, sourceId: '', categoryId: '', brandId: '', names: emptyNames(),
-    price: 0, otPrice: 0, sales: 0, unit: 'pc', moq: 0, image: '', tag: '',
+    price: 0, otPrice: 0, sales: 0, unit: 'pc', moq: 0, image: '', video: '', tag: '',
     blurb: '', sort: 0, active: true
   }
 }
