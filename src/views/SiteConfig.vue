@@ -32,8 +32,11 @@
       <el-form-item label="邮箱">
         <el-input v-model="cfg.email" placeholder="如 sales@example.com" />
       </el-form-item>
-      <el-form-item label="币种符号">
-        <el-input v-model="cfg.currency" style="width: 160px" placeholder="如 $ 或 USD" />
+      <el-form-item label="基准币种">
+        <el-select v-model="cfg.baseCurrency" style="width: 200px">
+          <el-option v-for="c in BASE_CURRENCIES" :key="c.code" :label="`${c.code} ${c.name}`" :value="c.code" />
+        </el-select>
+        <span class="note">商品价格都是按这个币种录入的；前台会按当天汇率自动换算给客人看</span>
       </el-form-item>
       <el-form-item label="显示询价入口">
         <el-switch v-model="cfg.showRfq" />
@@ -51,12 +54,27 @@
       <el-form-item label="导航菜单">
         <div class="nav-editor">
           <div v-for="(item, idx) in cfg.navItems" :key="idx" class="nav-row">
-            <el-input v-model="item.label" placeholder="菜单文字，如 礼品专区" style="width: 240px" />
-            <el-input v-model="item.link" placeholder="链接，如 #gifts（可空）" style="width: 240px" />
+            <el-input v-model="item.label" placeholder="菜单文字，如 礼品专区" style="width: 200px" />
+            <el-select v-model="item.type" placeholder="点开去哪" style="width: 150px">
+              <el-option label="不跳转" value="" />
+              <el-option label="跳到某个分类" value="category" />
+              <el-option label="跳到页面区块" value="anchor" />
+              <el-option label="打开外部链接" value="external" />
+            </el-select>
+            <el-select v-if="item.type === 'category'" v-model="item.categoryId" placeholder="选择分类" style="width: 260px">
+              <el-option v-for="c in categories" :key="c.id" :label="displayName(c.names)" :value="String(c.id)" />
+            </el-select>
+            <el-select v-else-if="item.type === 'anchor'" v-model="item.link" placeholder="选择区块" style="width: 200px">
+              <el-option label="商品列表" value="#catalogue" />
+              <el-option label="品牌介绍" value="#story" />
+              <el-option label="经销商卡" value="#dealer" />
+              <el-option label="回到顶部" value="#top" />
+            </el-select>
+            <el-input v-else-if="item.type === 'external'" v-model="item.link" placeholder="网址，如 https://example.com" style="width: 260px" />
             <el-button type="danger" plain @click="removeNav(idx)">删除</el-button>
           </div>
           <el-button @click="addNav">+ 添加一行</el-button>
-          <p class="note nav-note">留空（无任何行）时前台使用内置默认导航；链接目前仅保存，前台导航暂不跳转。</p>
+          <p class="note nav-note">留空（无任何行）时前台使用内置默认导航；「点开去哪」决定客人点这个菜单后跳到哪里。以前保存的菜单没选类型时，前台按链接猜：网址打开外链、# 开头跳到页面对应位置、其余不跳转。</p>
         </div>
       </el-form-item>
 
@@ -99,19 +117,46 @@
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api, run } from '../api/client'
+import { displayName } from '../utils/names'
 import ImageField from '../components/ImageField.vue'
+
+// Base currencies the stored prices can be entered in (site-config
+// baseCurrency). The storefront converts from this into the visitor's
+// chosen display currency at the day's rate.
+const BASE_CURRENCIES = [
+  { code: 'CNY', name: '人民币' }, { code: 'USD', name: '美元' },
+  { code: 'EUR', name: '欧元' }, { code: 'GBP', name: '英镑' },
+  { code: 'JPY', name: '日元' }, { code: 'AUD', name: '澳元' },
+  { code: 'CAD', name: '加元' }, { code: 'CHF', name: '瑞士法郎' },
+  { code: 'SGD', name: '新加坡元' }, { code: 'HKD', name: '港币' }
+]
 
 const cfg = reactive({
   logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
-  announcement: '', whatsapp: '', email: '', currency: '$', showRfq: true, showCart: false, showDealer: false,
+  announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showDealer: false,
   navItems: [], heroEyebrow: '', dealerTitle: '', dealerText: '',
   dealerButton: '', hotline: '', storyTitle: '', storyText: ''
 })
 
-function addNav() { cfg.navItems.push({ label: '', link: '' }) }
+// New rows default to jumping to a category; the admin picks which one.
+function addNav() { cfg.navItems.push({ label: '', link: '', type: 'category', categoryId: '' }) }
 function removeNav(idx) { cfg.navItems.splice(idx, 1) }
 const loading = ref(false)
 const saving = ref(false)
+// Category list for the nav "jump to a category" picker (full-path names).
+const categories = ref([])
+
+// Items saved before nav types existed have no type; infer it from link
+// exactly like the storefront does, so the editor shows what a click
+// will actually do. Empty link → 不跳转 (no action).
+const NAV_TYPES = ['category', 'anchor', 'external']
+function inferNavType(item) {
+  if (NAV_TYPES.includes(item.type)) return item.type
+  const link = String(item.link || '')
+  if (/^https?:\/\//i.test(link)) return 'external'
+  if (link.startsWith('#')) return 'anchor'
+  return ''
+}
 
 async function load() {
   loading.value = true
@@ -122,11 +167,22 @@ async function load() {
         if (data[key] !== undefined) cfg[key] = data[key]
       }
       if (!Array.isArray(cfg.navItems)) cfg.navItems = []
+      cfg.navItems = cfg.navItems.map((i) => ({
+        label: i.label || '',
+        link: i.link || '',
+        type: inferNavType(i),
+        categoryId: i.categoryId !== undefined && i.categoryId !== null ? String(i.categoryId) : ''
+      }))
     }
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
     loading.value = false
+  }
+  try {
+    categories.value = (await api('/api/admin/categories')) || []
+  } catch {
+    categories.value = []
   }
 }
 
@@ -152,6 +208,6 @@ onMounted(load)
 .logo-editor { width: 100%; }
 .logo-note { margin-left: 0; margin-top: 6px; }
 .nav-editor { width: 100%; }
-.nav-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.nav-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
 .nav-note { margin-left: 0; margin-top: 6px; }
 </style>
