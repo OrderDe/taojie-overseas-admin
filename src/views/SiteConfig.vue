@@ -1,6 +1,13 @@
 <template>
   <el-card v-loading="loading" class="cfg-card">
     <el-form :model="cfg" label-width="130px">
+      <el-divider content-position="left">站点 Logo</el-divider>
+      <el-form-item label="Logo 图片">
+        <div class="logo-editor">
+          <ImageField v-model="cfg.logo" />
+          <p class="note logo-note">建议透明底 PNG；留空就显示文字店名</p>
+        </div>
+      </el-form-item>
       <el-form-item label="默认语言">
         <el-select v-model="cfg.defaultLanguage" style="width: 260px">
           <el-option label="English" value="en" />
@@ -88,9 +95,10 @@
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api, run } from '../api/client'
+import ImageField from '../components/ImageField.vue'
 
 const cfg = reactive({
-  defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
+  logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
   announcement: '', whatsapp: '', email: '', currency: '$', showRfq: true, showCart: false,
   navItems: [], heroEyebrow: '', dealerTitle: '', dealerText: '',
   dealerButton: '', hotline: '', storyTitle: '', storyText: ''
@@ -137,6 +145,8 @@ onMounted(load)
 <style scoped>
 .cfg-card { max-width: 760px; }
 .note { color: var(--adm-text-3); font-size: 12px; margin-left: 12px; }
+.logo-editor { width: 100%; }
+.logo-note { margin-left: 0; margin-top: 6px; }
 .nav-editor { width: 100%; }
 .nav-row { display: flex; gap: 8px; margin-bottom: 8px; }
 .nav-note { margin-left: 0; margin-top: 6px; }
