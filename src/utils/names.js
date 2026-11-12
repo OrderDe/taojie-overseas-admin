@@ -1,16 +1,13 @@
-// Multi-language name fields. Products, categories and brands all carry a
-// names map { en, zh, es, fr, pt }; the admin UI edits all five in a form.
+// Multi-language name helpers. Products, categories and brands all carry
+// a names map keyed by language code; the language list itself lives in
+// the registry (utils/langs.js) — this module only shapes the maps.
+import { LANGS as REGISTRY } from './langs'
 
-export const LANGS = [
-  { key: 'en', label: 'English' },
-  { key: 'zh', label: '中文' },
-  { key: 'es', label: 'Español' },
-  { key: 'fr', label: 'Français' },
-  { key: 'pt', label: 'Português' }
-]
+// Legacy shape ({ key, label }) kept for existing imports.
+export const LANGS = REGISTRY.map((l) => ({ key: l.code, label: l.label }))
 
 export function emptyNames() {
-  return { en: '', zh: '', es: '', fr: '', pt: '' }
+  return Object.fromEntries(REGISTRY.map((l) => [l.code, '']))
 }
 
 // Display name for tables: English first, then Chinese, then any value.
