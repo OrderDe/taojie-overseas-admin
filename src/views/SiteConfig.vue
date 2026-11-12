@@ -31,6 +31,10 @@
       <el-form-item label="显示询价入口">
         <el-switch v-model="cfg.showRfq" />
       </el-form-item>
+      <el-form-item label="显示购物车和订单">
+        <el-switch v-model="cfg.showCart" />
+        <span class="note">关掉后前台只保留询价，适合询盘站</span>
+      </el-form-item>
 
       <el-divider content-position="left">首页导航菜单</el-divider>
       <el-form-item label="导航菜单">
@@ -87,7 +91,7 @@ import { api, run } from '../api/client'
 
 const cfg = reactive({
   defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
-  announcement: '', whatsapp: '', email: '', currency: '$', showRfq: true,
+  announcement: '', whatsapp: '', email: '', currency: '$', showRfq: true, showCart: false,
   navItems: [], heroEyebrow: '', dealerTitle: '', dealerText: '',
   dealerButton: '', hotline: '', storyTitle: '', storyText: ''
 })
