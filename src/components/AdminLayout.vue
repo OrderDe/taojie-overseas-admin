@@ -54,7 +54,8 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
-const visibleMenu = computed(() => MENU.filter((m) => auth.can(m.perm)))
+// Items without a `perm` (utility pages like 汇率换算) show for every account.
+const visibleMenu = computed(() => MENU.filter((m) => !m.perm || auth.can(m.perm)))
 const activePath = computed(() => route.path)
 const currentTitle = computed(() => {
   const item = MENU.find((m) => '/' + m.path === route.path)

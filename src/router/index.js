@@ -12,7 +12,11 @@ export const MENU = [
   { path: 'chat', title: '在线聊天', icon: 'ChatDotRound', perm: 'chat' },
   { path: 'theme-config', title: '主题配置', icon: 'Brush', perm: 'config' },
   { path: 'site-config', title: '站点配置', icon: 'Setting', perm: 'config' },
-  { path: 'users', title: '用户与角色', icon: 'UserFilled', perm: 'users' }
+  { path: 'users', title: '用户与角色', icon: 'UserFilled', perm: 'users' },
+  // Utility page with no `perm`: visible to every signed-in account
+  // (AdminLayout skips the permission filter for perm-less items), so
+  // sales staff whose role only has rfq/chat can still open it.
+  { path: 'fx', title: '汇率换算', icon: 'Coin' }
 ]
 
 const routes = [
@@ -34,7 +38,8 @@ const routes = [
       { path: 'chat', name: 'chat', component: () => import('../views/Chat.vue'), meta: { perm: 'chat' } },
       { path: 'theme-config', name: 'theme-config', component: () => import('../views/ThemeConfig.vue'), meta: { perm: 'config' } },
       { path: 'site-config', name: 'site-config', component: () => import('../views/SiteConfig.vue'), meta: { perm: 'config' } },
-      { path: 'users', name: 'users', component: () => import('../views/Users.vue'), meta: { perm: 'users' } }
+      { path: 'users', name: 'users', component: () => import('../views/Users.vue'), meta: { perm: 'users' } },
+      { path: 'fx', name: 'fx', component: () => import('../views/FxTool.vue') }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/' }
