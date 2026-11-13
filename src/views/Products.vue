@@ -26,7 +26,11 @@
       <el-button type="primary" @click="openCreate">新建商品</el-button>
       <el-button @click="loadAll">刷新</el-button>
       <el-button type="primary" plain @click="batchVisible = true">批量翻译未译名称</el-button>
+      <el-button type="primary" :disabled="!dirtySorts.length" :loading="savingSort" @click="saveSorts">
+        保存排序{{ dirtySorts.length ? `（${dirtySorts.length}）` : '' }}
+      </el-button>
     </div>
+    <p class="sort-hint">排序：数值越大越靠前（前台与本列表同序）。在下方「排序」列直接改数字后点「保存排序」；每行「置顶」会立即把该商品排到最前。</p>
 
     <BatchTranslateDialog v-model="batchVisible" kind="products" entityLabel="商品" @done="loadAll" />
 
@@ -54,13 +58,19 @@
       </el-table-column>
       <el-table-column label="MOQ" width="80" prop="moq" />
       <el-table-column label="销量" width="80" prop="sales" />
+      <el-table-column label="排序" width="130">
+        <template #default="{ row }">
+          <el-input-number v-model="row.sort" size="small" :step="1" controls-position="right" style="width: 108px" />
+        </template>
+      </el-table-column>
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
           <el-tag :type="row.active ? 'success' : 'info'">{{ row.active ? '上架' : '下架' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="150" fixed="right">
+      <el-table-column label="操作" width="215" fixed="right">
         <template #default="{ row }">
+          <el-button size="small" @click="pinTop(row)">置顶</el-button>
           <el-button size="small" @click="openEdit(row)">编辑</el-button>
           <el-button size="small" type="danger" @click="onDelete(row)">删除</el-button>
         </template>
@@ -243,6 +253,7 @@ async function loadAll() {
     ])
     currency.value = config?.currency || 'CNY'
     products.value = ps || []
+    snapshotSorts()
     categories.value = cs || []
     brands.value = bs || []
   } catch (e) {
@@ -286,6 +297,49 @@ async function onSave() {
   }
 }
 
+// ---- Inline sort editing ----
+// The list edits sort values in place; a snapshot taken at load time
+// marks the dirty rows so「保存排序」submits only what changed. Saving
+// (and pinning) goes through the backend's one-transaction batch
+// endpoint, then reloads so the visible order matches the server.
+const sortSnapshot = ref(new Map())
+const savingSort = ref(false)
+const dirtySorts = computed(() =>
+  products.value.filter((p) => (sortSnapshot.value.get(p.id) ?? 0) !== (Number(p.sort) || 0))
+)
+
+function snapshotSorts() {
+  sortSnapshot.value = new Map(products.value.map((p) => [p.id, Number(p.sort) || 0]))
+}
+
+async function saveSortItems(items) {
+  savingSort.value = true
+  try {
+    const r = await run(api('/api/admin/products/sort', {
+      method: 'POST',
+      body: JSON.stringify({ items })
+    }))
+    if (r) {
+      ElMessage.success(`已保存 ${items.length} 件商品的排序`)
+      await loadAll()
+      return true
+    }
+  } finally {
+    savingSort.value = false
+  }
+  return false
+}
+
+async function saveSorts() {
+  const items = dirtySorts.value.map((p) => ({ id: p.id, sort: Number(p.sort) || 0 }))
+  if (items.length) await saveSortItems(items)
+}
+
+async function pinTop(row) {
+  const max = products.value.reduce((m, p) => Math.max(m, Number(p.sort) || 0), 0)
+  await saveSortItems([{ id: row.id, sort: max + 1 }])
+}
+
 async function onDelete(row) {
   try {
     await ElMessageBox.confirm(`确定删除商品「${displayName(row.names)}」吗？`, '删除确认', { type: 'warning' })
@@ -305,5 +359,6 @@ onMounted(loadAll)
 .thumb { width: 52px; height: 40px; border-radius: 4px; }
 .no-img { color: var(--adm-text-3); font-size: 12px; }
 .hint { margin-left: 10px; color: var(--adm-text-3); font-size: 12px; }
+.sort-hint { margin: -4px 0 12px; color: var(--adm-text-3); font-size: 12px; }
 .pager { margin-top: 14px; justify-content: flex-end; }
 </style>
