@@ -101,11 +101,6 @@
       <el-form-item label="介绍正文">
         <el-input v-model="cfg.storyText" type="textarea" :rows="4" placeholder="留空则用前台默认文案" />
       </el-form-item>
-      <el-form-item label="公司简介嵌入网址">
-        <el-input v-model="cfg.profileUrl" placeholder="https://williscarpaint.com/" />
-        <div class="note logo-note">前台「公司简介」页将整页嵌入这个网址（默认是威利斯公司官网 williscarpaint.com）；清空则改为显示上面的文字版简介（介绍标题 + 介绍正文）</div>
-      </el-form-item>
-
       <el-form-item>
         <el-button type="primary" :loading="saving" @click="onSave">保存配置</el-button>
         <span class="note">保存后前台刷新即生效（前台启动时读后端配置覆盖本地默认）</span>
@@ -135,7 +130,7 @@ const cfg = reactive({
   logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
   announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showDealer: false, showContact: true,
   heroEyebrow: '', dealerTitle: '', dealerText: '',
-  dealerButton: '', hotline: '', storyTitle: '', storyText: '', profileUrl: 'https://williscarpaint.com/',
+  dealerButton: '', hotline: '', storyTitle: '', storyText: '',
   tiktok: '', instagram: '', facebook: '', youtube: '', wechat: ''
 })
 
