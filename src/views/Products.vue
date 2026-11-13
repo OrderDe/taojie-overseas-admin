@@ -76,7 +76,7 @@
     />
 
     <el-dialog
-      v-model="dialogVisible"
+      v-model="dialogVisible" :show-close="!mediaBusy" :close-on-click-modal="false" :close-on-press-escape="!mediaBusy"
       :title="form.id ? '编辑商品' : '新建商品'"
       width="720px"
       destroy-on-close
@@ -142,10 +142,10 @@
           <el-input v-model="form.sourceId" placeholder="tjmall 商品 id，可留空（自动生成）" />
         </el-form-item>
         <el-form-item label="图片">
-          <ImageField v-model="form.image" />
+          <MediaListField v-model="form.images" kind="image" @busy="imagesBusy = $event" />
         </el-form-item>
         <el-form-item label="视频">
-          <VideoField v-model="form.video" />
+          <MediaListField v-model="form.videos" kind="video" @busy="videosBusy = $event" />
         </el-form-item>
         <el-form-item label="简介">
           <el-input v-model="form.blurb" type="textarea" :rows="2" />
@@ -163,8 +163,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="onSave">保存</el-button>
+        <el-button :disabled="mediaBusy" @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" :disabled="mediaBusy" @click="onSave">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -178,8 +178,7 @@ import { displayName, emptyNames, specsToText, textToSpecs } from '../utils/name
 import { categoryTree, categoryPath, descendantIds } from '../utils/categories'
 import NamesFields from '../components/NamesFields.vue'
 import BatchTranslateDialog from '../components/BatchTranslateDialog.vue'
-import ImageField from '../components/ImageField.vue'
-import VideoField from '../components/VideoField.vue'
+import MediaListField from '../components/MediaListField.vue'
 
 const currency = ref('CNY')
 const products = ref([])
@@ -198,6 +197,9 @@ const pageSize = 20
 
 watch([filterCategory, filterBrand, filterStatus], () => { page.value = 1 })
 
+const imagesBusy = ref(false)
+const videosBusy = ref(false)
+const mediaBusy = computed(() => imagesBusy.value || videosBusy.value)
 const dialogVisible = ref(false)
 const batchVisible = ref(false)
 const specsText = ref('')
@@ -206,7 +208,7 @@ const form = reactive(blankForm())
 function blankForm() {
   return {
     id: null, sourceId: '', categoryId: '', brandId: '', names: emptyNames(),
-    price: 0, otPrice: 0, negotiable: false, sales: 0, unit: 'pc', moq: 0, image: '', video: '', tag: '',
+    price: 0, otPrice: 0, negotiable: false, sales: 0, unit: 'pc', moq: 0, image: '', video: '', images: [], videos: [], tag: '',
     blurb: '', sort: 0, active: true
   }
 }
@@ -260,18 +262,21 @@ function openCreate() {
 
 function openEdit(row) {
   Object.assign(form, blankForm(), JSON.parse(JSON.stringify(row)), { names: { ...emptyNames(), ...row.names } })
+  form.images = Array.isArray(row.images) ? [...row.images] : row.image ? [row.image] : []
+  form.videos = Array.isArray(row.videos) ? [...row.videos] : row.video ? [row.video] : []
   specsText.value = specsToText(row.specs)
   dialogVisible.value = true
 }
 
 async function onSave() {
+  if (mediaBusy.value) { ElMessage.warning("请等待媒体上传完成"); return }
   if (!String(form.names.en || form.names.zh || '').trim()) {
     ElMessage.warning('商品英文名/中文名至少填一个')
     return
   }
   saving.value = true
   try {
-    const payload = { ...form, specs: textToSpecs(specsText.value) }
+    const payload = { ...form, image: form.images[0] || "", video: form.videos[0] || "", specs: textToSpecs(specsText.value) }
     delete payload.id
     const r = await run(form.id
       ? api(`/api/admin/products/${form.id}`, { method: 'PUT', body: JSON.stringify(payload) })
