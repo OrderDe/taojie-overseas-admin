@@ -26,7 +26,10 @@
       </el-select>
       <el-button type="primary" @click="openCreate">新建商品</el-button>
       <el-button @click="loadAll">刷新</el-button>
+      <el-button type="primary" plain @click="batchVisible = true">批量翻译未译名称</el-button>
     </div>
+
+    <BatchTranslateDialog v-model="batchVisible" kind="products" entityLabel="商品" @done="loadAll" />
 
     <el-table :data="paged" v-loading="loading" stripe>
       <el-table-column label="图片" width="76">
@@ -173,6 +176,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, run } from '../api/client'
 import { displayName, emptyNames, specsToText, textToSpecs } from '../utils/names'
 import NamesFields from '../components/NamesFields.vue'
+import BatchTranslateDialog from '../components/BatchTranslateDialog.vue'
 import ImageField from '../components/ImageField.vue'
 import VideoField from '../components/VideoField.vue'
 
@@ -188,6 +192,7 @@ const page = ref(1)
 const pageSize = 20
 
 const dialogVisible = ref(false)
+const batchVisible = ref(false)
 const specsText = ref('')
 const form = reactive(blankForm())
 

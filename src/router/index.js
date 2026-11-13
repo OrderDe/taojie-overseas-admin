@@ -16,7 +16,8 @@ export const MENU = [
   // Utility page with no `perm`: visible to every signed-in account
   // (AdminLayout skips the permission filter for perm-less items), so
   // sales staff whose role only has rfq/chat can still open it.
-  { path: 'fx', title: '汇率换算', icon: 'Coin' }
+  { path: 'fx', title: '汇率换算', icon: 'Coin' },
+  { path: 'mymemory', title: 'MyMemory 查询', icon: 'Search' }
 ]
 
 const routes = [
@@ -39,7 +40,8 @@ const routes = [
       { path: 'theme-config', name: 'theme-config', component: () => import('../views/ThemeConfig.vue'), meta: { perm: 'config' } },
       { path: 'site-config', name: 'site-config', component: () => import('../views/SiteConfig.vue'), meta: { perm: 'config' } },
       { path: 'users', name: 'users', component: () => import('../views/Users.vue'), meta: { perm: 'users' } },
-      { path: 'fx', name: 'fx', component: () => import('../views/FxTool.vue') }
+      { path: 'fx', name: 'fx', component: () => import('../views/FxTool.vue') },
+      { path: 'mymemory', name: 'mymemory', component: () => import('../views/MyMemoryQuery.vue') }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/' }

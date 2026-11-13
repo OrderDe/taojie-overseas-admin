@@ -3,7 +3,10 @@
     <div class="toolbar">
       <el-button type="primary" @click="openCreate">新建品牌</el-button>
       <el-button @click="load">刷新</el-button>
+      <el-button type="primary" plain @click="batchVisible = true">批量翻译未译名称</el-button>
     </div>
+
+    <BatchTranslateDialog v-model="batchVisible" kind="brands" entityLabel="品牌" @done="load" />
 
     <el-table :data="rows" v-loading="loading" stripe>
       <el-table-column label="Logo" width="90">
@@ -71,12 +74,14 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, run } from '../api/client'
 import { displayName, emptyNames } from '../utils/names'
 import NamesFields from '../components/NamesFields.vue'
+import BatchTranslateDialog from '../components/BatchTranslateDialog.vue'
 import ImageField from '../components/ImageField.vue'
 
 const rows = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
+const batchVisible = ref(false)
 const editingId = ref('')
 const form = reactive({ id: '', names: emptyNames(), logo: '', sort: 0, active: true })
 

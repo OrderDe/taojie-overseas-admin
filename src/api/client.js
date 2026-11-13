@@ -29,13 +29,19 @@ export async function api(path, opts = {}) {
   if (body && typeof body === 'object' && 'code' in body && 'data' in body) {
     if (body.code !== 200) {
       if (body.code === 401) handleUnauthorized()
-      throw new Error(body.message || `请求失败 (${body.code})`)
+      const err = new Error(body.message || `请求失败 (${body.code})`)
+      err.body = body
+      throw err
     }
     return body.data
   }
   if (!res.ok) {
     if (res.status === 401) handleUnauthorized()
-    throw new Error((body && body.error) || `请求失败 (${res.status})`)
+    const err = new Error((body && body.error) || `请求失败 (${res.status})`)
+    // Keep the raw body reachable (e.g. translate's per-language
+    // `errors` map on a 502) for pages that render failure details.
+    err.body = body
+    throw err
   }
   return body
 }
