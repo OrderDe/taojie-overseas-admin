@@ -21,7 +21,16 @@
           :index="'/' + item.path"
         >
           <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ item.title }}</span>
+          <el-badge
+            v-if="item.path === 'chat'"
+            :value="chatAlerts.totalUnread"
+            :hidden="!chatAlerts.totalUnread"
+            :max="99"
+            class="menu-badge"
+          >
+            <span>{{ item.title }}</span>
+          </el-badge>
+          <span v-else>{{ item.title }}</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -44,15 +53,22 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MENU } from '../router'
 import { useAuthStore } from '../stores/auth'
+import { useChatAlertsStore } from '../stores/chatAlerts'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const chatAlerts = useChatAlertsStore()
+
+// The layout only exists while signed in: run the shared chat-unread
+// polling (menu badge / title flash / desktop notifications) with it.
+onMounted(() => chatAlerts.start())
+onBeforeUnmount(() => chatAlerts.stop())
 
 // Items without a `perm` (utility pages like 汇率换算) show for every account.
 const visibleMenu = computed(() => MENU.filter((m) => !m.perm || auth.can(m.perm)))
@@ -86,6 +102,7 @@ async function onLogout() {
 .aside :deep(.el-menu-item) { border-radius: var(--adm-radius); margin-bottom: 2px; }
 .aside :deep(.el-menu-item:hover) { background: var(--adm-sidebar-hover-bg); }
 .aside :deep(.el-menu-item.is-active) { background: var(--adm-sidebar-active-bg); font-weight: 600; }
+.menu-badge :deep(.el-badge__content) { font-weight: 700; }
 .header {
   background: var(--adm-surface); display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid var(--adm-border); height: 64px;

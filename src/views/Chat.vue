@@ -6,6 +6,7 @@
         <b>会话列表</b>
         <span class="head-actions">
           <el-button size="small" @click="toggleSound">{{ soundOn ? '🔔 提醒音开' : '🔕 提醒音关' }}</el-button>
+          <el-button size="small" @click="chatAlerts.toggleNotify()">{{ chatAlerts.notifyOn ? '🖥️ 桌面通知开' : '🖥️ 桌面通知关' }}</el-button>
           <el-button size="small" @click="loadSessions(false)">刷新</el-button>
         </span>
       </div>
@@ -23,15 +24,16 @@
         v-for="s in filteredSessions"
         :key="s.id"
         class="session-item"
-        :class="{ active: current && current.id === s.id }"
+        :class="{ active: current && current.id === s.id, 'has-unread': s.unread > 0 }"
         @click="openSession(s)"
       >
         <div class="s-top">
           <span class="dot" :class="{ on: s.online }"></span>
+          <span v-if="s.unread" class="unread-dot"></span>
           <b class="s-name">{{ s.visitorName || '访客' }}</b>
           <el-tag v-if="s.suspectBot" size="small" type="danger" effect="plain">疑似机器人</el-tag>
           <el-tag v-if="s.status === 'closed'" size="small" type="info" effect="plain">已结束</el-tag>
-          <el-badge v-if="s.unread" :value="s.unread" />
+          <el-badge v-if="s.unread" :value="s.unread" :max="99" class="unread-badge" />
           <span class="s-time">{{ fmtTime(s.lastMsgAt || s.last_msg_at || s.createdAt) }}</span>
         </div>
         <div class="s-meta">
@@ -150,9 +152,14 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api } from '../api/client'
 import { EMOJIS, isEmojiOnlyMessage } from '../emojis.js'
+import { useChatAlertsStore } from '../stores/chatAlerts'
+
+const route = useRoute()
+const chatAlerts = useChatAlertsStore()
 
 const sessions = ref([])
 const current = ref(null)
@@ -172,8 +179,6 @@ let keywordTimer = null
 let lastTypingAt = 0
 let prevTotalUnread = null
 let audioCtx = null
-
-const ORIGINAL_TITLE = document.title
 
 const builtinReplies = [
   'Hi! Thanks for reaching out — how can I help you today?',
@@ -228,9 +233,9 @@ const visitorRead = computed(() =>
   lastAgentId.value > 0 && (sessionInfo.value?.visitorReadMsgId || 0) >= lastAgentId.value
 )
 
-// ---- new-message alerts: page title + optional beep ----
+// ---- new-message sound (title flashing / badge / desktop notifications
+// live in the shared chatAlerts store, fed by loadSessions → ingest) ----
 watch(totalUnread, (n) => {
-  document.title = n > 0 ? `(${n}) 在线聊天` : ORIGINAL_TITLE
   if (prevTotalUnread !== null && n > prevTotalUnread && soundOn.value) beep()
   prevTotalUnread = n
 })
@@ -304,6 +309,9 @@ async function loadSessions(silent) {
     const kw = keyword.value.trim()
     const url = kw ? `/api/admin/chat/sessions?keyword=${encodeURIComponent(kw)}` : '/api/admin/chat/sessions'
     sessions.value = (await api(url)) || []
+    // Only the unfiltered list is a complete unread snapshot for the
+    // shared alert store (badge / title flash / desktop notifications).
+    if (!kw) chatAlerts.ingest(sessions.value)
   } catch (e) {
     if (!silent) ElMessage.error(e.message)
   } finally {
@@ -337,6 +345,7 @@ async function loadMessages(silent) {
 
 async function openSession(s) {
   current.value = s
+  chatAlerts.setActiveSession(s.id)
   sessionInfo.value = null
   messages.value = []
   draft.value = ''
@@ -413,8 +422,14 @@ watch(keyword, () => {
   keywordTimer = setTimeout(() => loadSessions(true), 400)
 })
 
-onMounted(() => {
-  loadSessions(false)
+onMounted(async () => {
+  await loadSessions(false)
+  // Desktop notifications deep-link here with ?session=<id>.
+  const targetId = route.query.session
+  if (targetId) {
+    const s = sessions.value.find((x) => String(x.id) === String(targetId))
+    if (s) openSession(s)
+  }
   timer = setInterval(() => {
     loadSessions(true)
     if (current.value) loadMessages(true)
@@ -423,7 +438,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
   if (keywordTimer) clearTimeout(keywordTimer)
-  document.title = ORIGINAL_TITLE
+  chatAlerts.setActiveSession(null)
 })
 </script>
 
@@ -441,6 +456,27 @@ onBeforeUnmount(() => {
 .session-item { padding: 10px; border-radius: 8px; cursor: pointer; }
 .session-item:hover { background: var(--adm-surface-2); }
 .session-item.active { background: var(--adm-primary-light-9); }
+/* Unread rows only: gentle breathing highlight + pulsing red dot +
+   an enlarged count badge. Calm again as soon as the row is read. */
+.session-item.has-unread { animation: unread-breath 2s ease-in-out infinite; }
+.session-item.has-unread.active { animation: none; }
+@keyframes unread-breath {
+  0%, 100% { background-color: rgba(245, 108, 108, .05); }
+  50% { background-color: rgba(245, 108, 108, .16); }
+}
+.unread-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #f56c6c; flex-shrink: 0;
+  animation: unread-pulse 1.2s ease-out infinite;
+}
+@keyframes unread-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(245, 108, 108, .55); }
+  70% { box-shadow: 0 0 0 7px rgba(245, 108, 108, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 108, 108, 0); }
+}
+.unread-badge :deep(.el-badge__content) {
+  font-size: 12px; font-weight: 700; height: 20px; line-height: 20px;
+  padding: 0 7px; border-radius: 10px;
+}
 .s-top { display: flex; align-items: center; gap: 6px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: #c0c4cc; flex-shrink: 0; }
 .dot.on { background: #2fbf71; }
