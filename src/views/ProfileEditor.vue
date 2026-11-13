@@ -6,7 +6,8 @@
     </div>
     <p class="help">
       前台「公司简介」页是本站原生页面：顶部样式带的标题用站点配置里的「介绍标题」、副文案用「介绍正文」，
-      下面依次显示这里的轮播图、章节和图库，最下方是联系方式卡。文字可填 12 种语言，前台按客人当前语言显示，
+      下面依次显示这里的轮播图、章节、图库、客户评价和常见问题，最下方是联系方式卡。章节可配一张图（显示在标题下方），
+      正文用空行分段。文字可填 12 种语言，前台按客人当前语言显示，
       缺的语言自动用英文、再用第一个已填语言兜底。这里全部留空时，前台只显示文字版简介（介绍标题 + 介绍正文）。
     </p>
 
@@ -48,6 +49,11 @@
           </el-collapse-item>
         </el-collapse>
 
+        <p class="field-label">章节图片（可空）</p>
+        <div class="img-row">
+          <div class="img-main"><ImageField v-model="sec.image" /></div>
+        </div>
+
         <p class="field-label">要点</p>
         <div v-for="(bullet, bi) in sec.bullets" :key="'bullet-' + bi" class="bullet-block">
           <div class="bullet-head">
@@ -66,6 +72,62 @@
         <el-button type="danger" plain @click="content.gallery.splice(i, 1)">删除</el-button>
       </div>
       <el-button @click="content.gallery.push('')">添加图片</el-button>
+
+      <el-divider content-position="left">客户评价</el-divider>
+      <el-card v-for="(tm, ti) in content.testimonials" :key="tm._eid" class="section-card" shadow="never">
+        <div class="section-head">
+          <b>评价 {{ ti + 1 }}</b>
+          <el-button size="small" type="danger" plain @click="content.testimonials.splice(ti, 1)">删除评价</el-button>
+        </div>
+
+        <p class="field-label">姓名 / 署名</p>
+        <el-form-item label="姓名">
+          <el-input v-model="tm.name" placeholder="如：John · South Africa（所有语言共用，不翻译）" />
+        </el-form-item>
+
+        <p class="field-label">评价内容</p>
+        <!-- Same multi-line multilingual editor as the section body. -->
+        <el-form-item v-for="lang in PRIMARY" :key="'tm-' + lang.code" :label="lang.label">
+          <el-input v-model="tm.text[lang.code]" type="textarea" :rows="4" :placeholder="lang.label" />
+        </el-form-item>
+        <el-collapse v-model="tmMore[tm._eid]" class="more-langs">
+          <el-collapse-item title="更多语言" name="more">
+            <el-form-item v-for="lang in MORE" :key="'tm-more-' + lang.code" :label="lang.label">
+              <el-input v-model="tm.text[lang.code]" type="textarea" :rows="4" :placeholder="lang.label" />
+            </el-form-item>
+          </el-collapse-item>
+        </el-collapse>
+      </el-card>
+      <el-button type="primary" plain @click="addTestimonial">添加评价</el-button>
+
+      <el-divider content-position="left">常见问题</el-divider>
+      <el-card v-for="(faq, fi) in content.faqs" :key="faq._eid" class="section-card" shadow="never">
+        <div class="section-head">
+          <b>问题 {{ fi + 1 }}</b>
+          <span>
+            <el-button size="small" :disabled="fi === 0" @click="moveFaq(fi, -1)">上移</el-button>
+            <el-button size="small" :disabled="fi === content.faqs.length - 1" @click="moveFaq(fi, 1)">下移</el-button>
+            <el-button size="small" type="danger" plain @click="content.faqs.splice(fi, 1)">删除问题</el-button>
+          </span>
+        </div>
+
+        <p class="field-label">问题</p>
+        <NamesFields :model="faq.q" />
+
+        <p class="field-label">答案（换行分段）</p>
+        <!-- Same multi-line multilingual editor as the section body. -->
+        <el-form-item v-for="lang in PRIMARY" :key="'faq-a-' + lang.code" :label="lang.label">
+          <el-input v-model="faq.a[lang.code]" type="textarea" :rows="5" :placeholder="lang.label" />
+        </el-form-item>
+        <el-collapse v-model="faqMore[faq._eid]" class="more-langs">
+          <el-collapse-item title="更多语言" name="more">
+            <el-form-item v-for="lang in MORE" :key="'faq-a-more-' + lang.code" :label="lang.label">
+              <el-input v-model="faq.a[lang.code]" type="textarea" :rows="5" :placeholder="lang.label" />
+            </el-form-item>
+          </el-collapse-item>
+        </el-collapse>
+      </el-card>
+      <el-button type="primary" plain @click="addFaq">添加问题</el-button>
     </el-form>
   </el-card>
 </template>
@@ -89,14 +151,22 @@ const loaded = ref(false)
 // only profileContent replaced (same load/save pattern as SiteConfig),
 // so fields managed elsewhere are never clobbered from this page.
 let fullConfig = null
-const content = reactive({ heroImages: [], sections: [], gallery: [] })
-// Per-section「更多语言」collapse state for the body editor, keyed by
-// the section's editor-only id (stripped again when saving).
+const content = reactive({ heroImages: [], sections: [], gallery: [], faqs: [], testimonials: [] })
+// Per-entry「更多语言」collapse state for the multi-line editors, keyed
+// by each entry's editor-only id (stripped again when saving).
 const bodyMore = reactive({})
+const faqMore = reactive({})
+const tmMore = reactive({})
 let eidSeq = 0
 
 function namesObj(v) {
   return v && typeof v === 'object' && !Array.isArray(v) ? { ...v } : {}
+}
+
+// Start a multi-line editor expanded when a collapsed language already
+// has text, so existing copy is never hidden (same rule as NamesFields).
+function moreState(map) {
+  return MORE.some((l) => (map[l.code] || '').trim()) ? ['more'] : []
 }
 
 function normalizeSection(s) {
@@ -104,12 +174,32 @@ function normalizeSection(s) {
     _eid: ++eidSeq,
     title: namesObj(s && s.title),
     body: namesObj(s && s.body),
+    // Older content predates the section image: default to no image.
+    image: typeof (s && s.image) === 'string' ? s.image : '',
     bullets: (Array.isArray(s && s.bullets) ? s.bullets : []).map((b) => namesObj(b))
   }
-  // Mirror NamesFields: start expanded when a collapsed language
-  // already has body text, so existing copy is never hidden.
-  bodyMore[sec._eid] = MORE.some((l) => (sec.body[l.code] || '').trim()) ? ['more'] : []
+  bodyMore[sec._eid] = moreState(sec.body)
   return sec
+}
+
+function normalizeFaq(f) {
+  const faq = {
+    _eid: ++eidSeq,
+    q: namesObj(f && f.q),
+    a: namesObj(f && f.a)
+  }
+  faqMore[faq._eid] = moreState(faq.a)
+  return faq
+}
+
+function normalizeTestimonial(x) {
+  const tm = {
+    _eid: ++eidSeq,
+    name: typeof (x && x.name) === 'string' ? x.name : '',
+    text: namesObj(x && x.text)
+  }
+  tmMore[tm._eid] = moreState(tm.text)
+  return tm
 }
 
 function normalizeContent(raw) {
@@ -117,6 +207,10 @@ function normalizeContent(raw) {
   content.heroImages = (Array.isArray(c.heroImages) ? c.heroImages : []).filter((u) => typeof u === 'string')
   content.gallery = (Array.isArray(c.gallery) ? c.gallery : []).filter((u) => typeof u === 'string')
   content.sections = (Array.isArray(c.sections) ? c.sections : []).map(normalizeSection)
+  // Older content has no faqs / testimonials keys at all: default to
+  // empty lists so the editor opens cleanly and never drops old data.
+  content.faqs = (Array.isArray(c.faqs) ? c.faqs : []).map(normalizeFaq)
+  content.testimonials = (Array.isArray(c.testimonials) ? c.testimonials : []).map(normalizeTestimonial)
 }
 
 async function load() {
@@ -146,6 +240,22 @@ function moveSection(index, direction) {
   content.sections[next] = tmp
 }
 
+function addFaq() {
+  content.faqs.push(normalizeFaq({}))
+}
+
+function moveFaq(index, direction) {
+  const next = index + direction
+  if (next < 0 || next >= content.faqs.length) return
+  const tmp = content.faqs[index]
+  content.faqs[index] = content.faqs[next]
+  content.faqs[next] = tmp
+}
+
+function addTestimonial() {
+  content.testimonials.push(normalizeTestimonial({}))
+}
+
 // Drop blank languages (and blank bullets) before saving; the backend
 // shape-guards the payload again on the way in.
 function cleanNames(map) {
@@ -163,9 +273,18 @@ async function onSave() {
     sections: content.sections.map((s) => ({
       title: cleanNames(s.title),
       body: cleanNames(s.body),
+      image: (s.image || '').trim(),
       bullets: s.bullets.map((b) => cleanNames(b)).filter((b) => Object.keys(b).length)
     })),
-    gallery: content.gallery.map((u) => (u || '').trim()).filter(Boolean)
+    gallery: content.gallery.map((u) => (u || '').trim()).filter(Boolean),
+    // Blank entries (nothing in any language) are dropped on save;
+    // everything the operator typed is carried through as-is.
+    faqs: content.faqs
+      .map((f) => ({ q: cleanNames(f.q), a: cleanNames(f.a) }))
+      .filter((f) => Object.keys(f.q).length || Object.keys(f.a).length),
+    testimonials: content.testimonials
+      .map((x) => ({ name: (x.name || '').trim(), text: cleanNames(x.text) }))
+      .filter((x) => x.name || Object.keys(x.text).length)
   }
   saving.value = true
   try {
