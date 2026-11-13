@@ -54,33 +54,7 @@
         <span class="note">首页英雄区右侧那张卡，只显示出口热线、WhatsApp 和邮箱，不带『经销商』字样；号码在下面的卡片区和本页上方填写</span>
       </el-form-item>
 
-      <el-divider content-position="left">首页导航菜单</el-divider>
-      <el-form-item label="导航菜单">
-        <div class="nav-editor">
-          <div v-for="(item, idx) in cfg.navItems" :key="idx" class="nav-row">
-            <el-input v-model="item.label" placeholder="菜单文字，如 礼品专区" style="width: 200px" />
-            <el-select v-model="item.type" placeholder="点开去哪" style="width: 150px">
-              <el-option label="不跳转" value="" />
-              <el-option label="跳到某个分类" value="category" />
-              <el-option label="跳到页面区块" value="anchor" />
-              <el-option label="打开外部链接" value="external" />
-            </el-select>
-            <el-select v-if="item.type === 'category'" v-model="item.categoryId" placeholder="选择分类" style="width: 260px">
-              <el-option v-for="c in categories" :key="c.id" :label="categoryPath(categories, c.id)" :value="String(c.id)" />
-            </el-select>
-            <el-select v-else-if="item.type === 'anchor'" v-model="item.link" placeholder="选择区块" style="width: 200px">
-              <el-option label="商品列表" value="#catalogue" />
-              <el-option label="品牌介绍" value="#story" />
-              <el-option label="联系方式卡" value="#dealer" />
-              <el-option label="回到顶部" value="#top" />
-            </el-select>
-            <el-input v-else-if="item.type === 'external'" v-model="item.link" placeholder="网址，如 https://example.com" style="width: 260px" />
-            <el-button type="danger" plain @click="removeNav(idx)">删除</el-button>
-          </div>
-          <el-button @click="addNav">+ 添加一行</el-button>
-          <p class="note nav-note">留空（无任何行）时前台使用内置默认导航；「点开去哪」决定客人点这个菜单后跳到哪里。以前保存的菜单没选类型时，前台按链接猜：网址打开外链、# 开头跳到页面对应位置、其余不跳转。</p>
-        </div>
-      </el-form-item>
+      <el-form-item label="顶部导航"><router-link to="/navigation">前往导航管理</router-link></el-form-item>
 
       <el-divider content-position="left">首页顶部（其他）</el-divider>
       <el-form-item label="大标题上方小字">
@@ -140,8 +114,6 @@
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api, run } from '../api/client'
-import { displayName } from '../utils/names'
-import { categoryPath } from '../utils/categories'
 import ImageField from '../components/ImageField.vue'
 
 // Base currencies the stored prices can be entered in (site-config
@@ -158,31 +130,13 @@ const BASE_CURRENCIES = [
 const cfg = reactive({
   logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
   announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showDealer: false, showContact: true,
-  navItems: [], heroEyebrow: '', dealerTitle: '', dealerText: '',
+  heroEyebrow: '', dealerTitle: '', dealerText: '',
   dealerButton: '', hotline: '', storyTitle: '', storyText: '',
   tiktok: '', instagram: '', facebook: '', youtube: '', wechat: ''
 })
 
-// New rows default to jumping to a category; the admin picks which one.
-function addNav() { cfg.navItems.push({ label: '', link: '', type: 'category', categoryId: '' }) }
-function removeNav(idx) { cfg.navItems.splice(idx, 1) }
 const loading = ref(false)
 const saving = ref(false)
-// Category list for the nav "jump to a category" picker (full-path names).
-const categories = ref([])
-
-// Items saved before nav types existed have no type; infer it from link
-// exactly like the storefront does, so the editor shows what a click
-// will actually do. Empty link → 不跳转 (no action).
-const NAV_TYPES = ['category', 'anchor', 'external']
-function inferNavType(item) {
-  if (NAV_TYPES.includes(item.type)) return item.type
-  const link = String(item.link || '')
-  if (/^https?:\/\//i.test(link)) return 'external'
-  if (link.startsWith('#')) return 'anchor'
-  return ''
-}
-
 async function load() {
   loading.value = true
   try {
@@ -191,24 +145,14 @@ async function load() {
       for (const key of Object.keys(cfg)) {
         if (data[key] !== undefined) cfg[key] = data[key]
       }
-      if (!Array.isArray(cfg.navItems)) cfg.navItems = []
-      cfg.navItems = cfg.navItems.map((i) => ({
-        label: i.label || '',
-        link: i.link || '',
-        type: inferNavType(i),
-        categoryId: i.categoryId !== undefined && i.categoryId !== null ? String(i.categoryId) : ''
-      }))
+
     }
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
     loading.value = false
   }
-  try {
-    categories.value = (await api('/api/admin/categories')) || []
-  } catch {
-    categories.value = []
-  }
+
 }
 
 async function onSave() {
