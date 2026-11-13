@@ -21,6 +21,7 @@ export const MENU = [
   { path: 'navigation', title: '导航管理', icon: 'Menu', perm: 'config' },
   { path: 'site-config', title: '站点配置', icon: 'Setting', perm: 'config' },
   { path: 'profile-editor', title: '公司简介', icon: 'OfficeBuilding', perm: 'config' },
+  { path: 'custom-pages', title: '自定义页面', icon: 'Document', perm: 'config' },
   { path: 'users', title: '用户与角色', icon: 'UserFilled', perm: 'users' },
   // Utility page with no `perm`: visible to every signed-in account
   // (AdminLayout skips the permission filter for perm-less items), so
@@ -57,6 +58,7 @@ const routes = [
       { path: 'navigation', name: 'navigation', component: () => import('../views/Navigation.vue'), meta: { perm: 'config' } },
       { path: 'site-config', name: 'site-config', component: () => import('../views/SiteConfig.vue'), meta: { perm: 'config' } },
       { path: 'profile-editor', name: 'profile-editor', component: () => import('../views/ProfileEditor.vue'), meta: { perm: 'config' } },
+      { path: 'custom-pages', name: 'custom-pages', component: () => import('../views/CustomPages.vue'), meta: { perm: 'config' } },
       { path: 'users', name: 'users', component: () => import('../views/Users.vue'), meta: { perm: 'users' } },
       { path: 'fx', name: 'fx', component: () => import('../views/FxTool.vue') },
       { path: 'mymemory', name: 'mymemory', component: () => import('../views/MyMemoryQuery.vue') }

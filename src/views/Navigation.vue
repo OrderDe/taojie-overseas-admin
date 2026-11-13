@@ -6,7 +6,7 @@
       <el-button :disabled="saving" @click="load">重新加载</el-button>
       <el-button type="primary" :loading="saving" :disabled="loading || !loaded" @click="save">保存导航</el-button>
     </div>
-    <p class="help">管理前台顶部导航，包含配方搜索和公司简介。按表格顺序显示；关闭开关可隐藏。默认名称随前台语言切换，修改名称后使用自定义文字。保存后刷新前台生效。</p>
+    <p class="help">管理前台顶部导航，包含配方搜索和公司简介。按表格顺序显示；关闭开关可隐藏。默认名称随前台语言切换，修改名称后使用自定义文字。跳转类型选「自定义页面」时，目标是在「自定义页面」菜单里建好的专页（先去那边建页，再回到这里挂导航）。保存后刷新前台生效。</p>
     <el-table :data="items" row-key="editorId" border>
       <el-table-column label="名称" min-width="220"><template #default="{ row }">
         <el-input v-model="row.label" placeholder="导航名称" @input="row.labelKey = ''" />
@@ -16,7 +16,7 @@
       <el-table-column label="跳转类型" width="160"><template #default="{ row }">
         <el-select v-model="row.type" aria-label="跳转类型" placeholder="不跳转">
           <el-option label="不跳转" value="" /><el-option label="商品分类" value="category" />
-          <el-option label="站内页面或区块" value="anchor" /><el-option label="外部链接" value="external" />
+          <el-option label="站内页面或区块" value="anchor" /><el-option label="自定义页面" value="page" /><el-option label="外部链接" value="external" />
         </el-select>
       </template></el-table-column>
       <el-table-column label="跳转目标" min-width="240"><template #default="{ row }">
@@ -25,6 +25,9 @@
         </el-select>
         <el-select v-else-if="row.type === 'anchor'" v-model="row.link" placeholder="选择站内页面或区块" style="width:100%">
           <el-option v-for="target in targets" :key="target.value" :label="target.label" :value="target.value" />
+        </el-select>
+        <el-select v-else-if="row.type === 'page'" v-model="row.link" filterable placeholder="选择自定义页面" style="width:100%">
+          <el-option v-for="p in pages" :key="p.slug" :label="pageLabel(p)" :value="'#page/' + p.slug" />
         </el-select>
         <el-input v-else-if="row.type === 'external'" v-model="row.link" placeholder="https://example.com" />
         <span v-else class="help">仅显示名称</span>
@@ -43,14 +46,19 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../api/client'
 import { categoryPath } from '../utils/categories'
-const items=ref([]), categories=ref([]), loading=ref(false), saving=ref(false), loaded=ref(false)
+const items=ref([]), categories=ref([]), pages=ref([]), loading=ref(false), saving=ref(false), loaded=ref(false)
 const targets=[{label:'配方搜索',value:'#formula'},{label:'公司简介',value:'#profile'},{label:'商品列表',value:'#catalogue'},{label:'品牌介绍',value:'#story'},{label:'联系方式',value:'#dealer'},{label:'询价表单',value:'#rfq'},{label:'回到顶部',value:'#top'}]
 const labels=['礼品专区','自用专区','热门精选','涂料专区','案例','资讯']
 let nextId=0
 function normalize(item) {
  const link=String(item.link||'')
- const type=['category','anchor','external'].includes(item.type)?item.type:/^https?:\/\//i.test(link)?'external':link.startsWith('#')?'anchor':''
+ const type=['category','anchor','external','page'].includes(item.type)?item.type:/^https?:\/\//i.test(link)?'external':link.startsWith('#')?'anchor':''
  return {...item,editorId:++nextId,label:String(item.label||''),labelKey:String(item.labelKey||''),enabled:item.enabled!==false,type,link,categoryId:String(item.categoryId||'')}
+}
+function pageLabel(p) {
+ const t=p.titles||{}
+ const title=t.zh||t.en||Object.values(t).find(v=>String(v||'').trim())||'(未命名)'
+ return p.enabled===false?`${title}（${p.slug}）· 已隐藏`:`${title}（${p.slug}）`
 }
 function defaults() { return labels.map((label,index)=>normalize({label,labelKey:'zones.'+index})).concat([
  normalize({label:'配方搜索',labelKey:'formulaSearch',type:'anchor',link:'#formula'}),
@@ -70,12 +78,14 @@ async function load(){
   loaded.value=true
  }catch(e){ElMessage.error(e.message)}finally{loading.value=false}
  try{categories.value=(await api('/api/admin/categories'))||[]}catch{categories.value=[]}
+ try{pages.value=(await api('/api/admin/pages'))||[]}catch{pages.value=[]}
 }
 async function save(){
  for(const item of items.value){
   if(!item.label.trim()){ElMessage.warning('请填写每条导航的名称');return}
   if(item.type==='category'&&!item.categoryId){ElMessage.warning('请选择商品分类');return}
   if(item.type==='anchor'&&!targets.some(t=>t.value===item.link)){ElMessage.warning('请选择站内页面或区块');return}
+  if(item.type==='page'&&!(pages.value.some(p=>'#page/'+p.slug===item.link)||/^#page\/[a-z0-9][a-z0-9-]{1,60}$/.test(item.link)&&pages.value.length===0)){ElMessage.warning('请选择自定义页面');return}
   if(item.type==='external'){try{const url=new URL(item.link);if(!['http:','https:'].includes(url.protocol))throw Error()}catch{ElMessage.warning('外部链接需为有效的 http 或 https 地址');return}}
  }
  saving.value=true
