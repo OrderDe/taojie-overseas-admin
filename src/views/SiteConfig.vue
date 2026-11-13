@@ -18,10 +18,10 @@
         </el-select>
       </el-form-item>
       <el-form-item label="首页大标题">
-        <el-input v-model="cfg.heroTitle" placeholder="首页最上方那行最大的字，留空用主题默认文案" />
+        <el-input v-model="cfg.heroTitle" placeholder="首页最上方那行最大的字，留空则首页不显示这行字" />
       </el-form-item>
       <el-form-item label="首页副标题">
-        <el-input v-model="cfg.heroSubtitle" placeholder="大标题下面那行说明文字，留空用主题默认文案" />
+        <el-input v-model="cfg.heroSubtitle" placeholder="大标题下面那行说明文字，留空则首页不显示这行字" />
       </el-form-item>
       <el-form-item label="公告">
         <el-input v-model="cfg.announcement" />
@@ -62,7 +62,7 @@
 
       <el-divider content-position="left">首页顶部（其他）</el-divider>
       <el-form-item label="大标题上方小字">
-        <el-input v-model="cfg.heroEyebrow" placeholder="如 F · EDITORIAL WHOLESALE，留空则显示主题名" />
+        <el-input v-model="cfg.heroEyebrow" placeholder="如 F · EDITORIAL WHOLESALE，留空则不显示" />
       </el-form-item>
 
       <el-divider content-position="left">首页右侧卡片（联系方式 / 经销商）</el-divider>
