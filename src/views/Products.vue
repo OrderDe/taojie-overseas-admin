@@ -30,12 +30,19 @@
       <el-button type="primary" :disabled="!dirtySorts.length" :loading="savingSort" @click="saveSorts">
         保存排序{{ dirtySorts.length ? `（${dirtySorts.length}）` : '' }}
       </el-button>
+      <el-button type="warning" plain :disabled="!selected.length" :loading="savingNegotiable" @click="batchNegotiable(true)">
+        批量设为面议{{ selected.length ? `（${selected.length}）` : '' }}
+      </el-button>
+      <el-button plain :disabled="!selected.length" :loading="savingNegotiable" @click="batchNegotiable(false)">
+        批量取消面议{{ selected.length ? `（${selected.length}）` : '' }}
+      </el-button>
     </div>
-    <p class="sort-hint">排序：数值越大越靠前（前台与本列表同序）。在下方「排序」列直接改数字后点「保存排序」；每行「置顶」会立即把该商品排到最前。</p>
+    <p class="sort-hint">排序：数值越大越靠前（前台与本列表同序）。在下方「排序」列直接改数字后点「保存排序」；每行「置顶」会立即把该商品排到最前。面议：「面议」列开关可直接切换单个商品；勾选左侧多选框后可用工具栏批量设为/取消面议。</p>
 
     <BatchTranslateDialog v-model="batchVisible" kind="products" entityLabel="商品" @done="loadAll" />
 
-    <el-table :data="paged" v-loading="loading" stripe>
+    <el-table :data="paged" v-loading="loading" stripe @selection-change="onSelectionChange">
+      <el-table-column type="selection" width="46" />
       <el-table-column label="图片" width="76">
         <template #default="{ row }">
           <el-image v-if="row.image" :src="row.image" class="thumb" fit="cover" />
@@ -55,6 +62,15 @@
         <template #default="{ row }">
           <el-tag v-if="row.negotiable" type="warning">面议</el-tag>
           <span v-else>{{ Number(row.price).toFixed(2) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="面议" width="76" align="center">
+        <template #default="{ row }">
+          <el-switch
+            v-model="row.negotiable"
+            :loading="negotiableBusy.has(row.id)"
+            @change="(v) => toggleNegotiable(row, v)"
+          />
         </template>
       </el-table-column>
       <el-table-column label="MOQ" width="80" prop="moq" />
@@ -355,6 +371,53 @@ async function saveSorts() {
 async function pinTop(row) {
   const max = products.value.reduce((m, p) => Math.max(m, Number(p.sort) || 0), 0)
   await saveSortItems([{ id: row.id, sort: max + 1 }])
+}
+
+// ---- Negotiable (面议) quick toggles ----
+// The row switch and the toolbar bulk buttons share the backend's
+// one-transaction batch endpoint (a single-element ids array for the
+// row switch). A failed row toggle rolls the switch back; the bulk
+// buttons reload the list so every row reflects the server state.
+const selected = ref([])
+const savingNegotiable = ref(false)
+const negotiableBusy = ref(new Set())
+
+function onSelectionChange(rows) {
+  selected.value = rows
+}
+
+function applyNegotiable(ids, negotiable) {
+  return run(api('/api/admin/products/negotiable', {
+    method: 'POST',
+    body: JSON.stringify({ ids, negotiable })
+  }))
+}
+
+async function toggleNegotiable(row, value) {
+  negotiableBusy.value = new Set(negotiableBusy.value).add(row.id)
+  try {
+    const r = await applyNegotiable([row.id], value)
+    if (!r) row.negotiable = !value
+  } finally {
+    const next = new Set(negotiableBusy.value)
+    next.delete(row.id)
+    negotiableBusy.value = next
+  }
+}
+
+async function batchNegotiable(negotiable) {
+  const ids = selected.value.map((p) => p.id)
+  if (!ids.length) return
+  savingNegotiable.value = true
+  try {
+    const r = await applyNegotiable(ids, negotiable)
+    if (r) {
+      ElMessage.success(`已${negotiable ? '设为' : '取消'}面议 ${r.updated ?? ids.length} 件商品`)
+      await loadAll()
+    }
+  } finally {
+    savingNegotiable.value = false
+  }
 }
 
 async function onDelete(row) {
