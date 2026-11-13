@@ -316,9 +316,11 @@ async function onSave() {
   }
   saving.value = true
   try {
+    // Send only the profile slice: the backend merges by present keys
+    // and authorises this endpoint per config area (profile key here).
     const r = await run(api('/api/admin/site-config', {
       method: 'PUT',
-      body: JSON.stringify({ ...fullConfig, profileContent })
+      body: JSON.stringify({ profileContent })
     }))
     if (r) {
       fullConfig = { ...fullConfig, profileContent }

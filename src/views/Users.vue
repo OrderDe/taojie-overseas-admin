@@ -94,7 +94,7 @@
     <el-dialog
       v-model="roleDialog"
       :title="roleForm.id ? '编辑角色' : '新建角色'"
-      width="520px"
+      width="680px"
       destroy-on-close
     >
       <el-form :model="roleForm" label-width="90px">
@@ -102,16 +102,19 @@
           <el-input v-model="roleForm.name" />
         </el-form-item>
         <el-form-item label="菜单权限">
-          <el-checkbox-group v-model="roleForm.permissions" :disabled="roleIsBuiltin">
-            <el-checkbox value="*" class="perm-check">全部权限（超级管理员）</el-checkbox>
-            <el-checkbox
-              v-for="p in menuPermissionDefs"
-              :key="p.key"
-              :value="p.key"
-              class="perm-check"
-            >{{ p.label }}</el-checkbox>
+          <el-checkbox-group v-model="roleForm.permissions" :disabled="roleIsBuiltin" class="perm-groups">
+            <el-checkbox value="*" class="perm-check perm-check-star">全部权限（超级管理员）</el-checkbox>
+            <template v-for="g in groupedPermissionDefs" :key="g.group">
+              <div class="perm-group-title">{{ g.group }}</div>
+              <el-checkbox
+                v-for="p in g.items"
+                :key="p.key"
+                :value="p.key"
+                class="perm-check"
+              >{{ p.label }}</el-checkbox>
+            </template>
           </el-checkbox-group>
-          <div class="permission-help">同一项内的菜单共用权限，勾选后一起开放。</div>
+          <div class="permission-help">每个菜单单独授权，勾哪个开哪个。</div>
           <div class="permission-help">登录后可用：{{ sharedMenuLabels }}（无需单独授权）。</div>
           <div v-if="roleIsBuiltin" class="note">内置角色的权限固定为全部，不可修改</div>
         </el-form-item>
@@ -133,10 +136,16 @@ import { MENU } from '../router'
 const users = ref([])
 const roles = ref([])
 const permDefs = ref([])
+// One checkbox per menu now that every menu has its own permission key;
+// the label is the menu's own title, filed under the backend's group.
 const menuPermissionDefs = computed(() => permDefs.value.map((permission) => {
-  const menus = MENU.filter((menu) => menu.perm === permission.key)
-  return { ...permission, label: menus.length ? menus.map((menu) => menu.title).join(' / ') : permission.label }
+  const menu = MENU.find((m) => m.perm === permission.key)
+  return { ...permission, label: menu ? menu.title : permission.label, group: permission.group || '其他' }
 }))
+const PERM_GROUP_ORDER = ['商品', '客户', '配方', '网站配置', '系统', '其他']
+const groupedPermissionDefs = computed(() => PERM_GROUP_ORDER
+  .map((group) => ({ group, items: menuPermissionDefs.value.filter((p) => p.group === group) }))
+  .filter((g) => g.items.length))
 const sharedMenuLabels = MENU.filter((menu) => !menu.perm).map((menu) => menu.title).join('、')
 const loading = ref(false)
 const saving = ref(false)
@@ -276,7 +285,12 @@ onMounted(load)
 .block { margin-bottom: 22px; }
 .section-title { font-size: 15px; font-weight: 600; margin: 6px 0 12px; color: var(--adm-text); }
 .perm-tag { margin-right: 6px; margin-bottom: 2px; }
-.perm-check { display: block; margin-bottom: 6px; }
+.perm-groups { display: block; max-height: 46vh; overflow-y: auto; width: 100%; padding-right: 6px; }
+.perm-group-title { font-size: 12px; font-weight: 600; color: var(--adm-text-muted, #6b7280); margin: 12px 0 4px; }
+.perm-group-title:first-of-type { margin-top: 4px; }
+.perm-check { display: inline-flex; align-items: flex-start; width: 50%; height: auto; margin: 0 0 6px; white-space: normal; }
+.perm-check-star { width: 100%; }
+.perm-check :deep(.el-checkbox__label) { white-space: normal; line-height: 1.45; }
 .permission-help { width: 100%; color: var(--adm-text-muted, #6b7280); font-size: 12px; line-height: 1.6; margin-top: 6px; }
 .note { color: #b45309; font-size: 12px; margin-top: 6px; }
 </style>

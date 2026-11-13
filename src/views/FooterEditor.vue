@@ -245,9 +245,11 @@ async function onSave() {
   }
   saving.value = true
   try {
+    // Send only the footer slice: the backend merges by present keys and
+    // authorises this endpoint per config area (footer key for these).
     const r = await run(api('/api/admin/site-config', {
       method: 'PUT',
-      body: JSON.stringify({ ...fullConfig, ...footer })
+      body: JSON.stringify(footer)
     }))
     if (r) {
       fullConfig = { ...fullConfig, ...footer }

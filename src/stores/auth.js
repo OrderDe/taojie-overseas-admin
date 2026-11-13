@@ -14,9 +14,23 @@ export const useAuthStore = defineStore('auth', () => {
   } catch { user.value = null }
 
   const loggedIn = computed(() => !!token.value && !!user.value)
-  const can = (perm) =>
-    Array.isArray(user.value?.permissions) &&
-    (user.value.permissions.includes('*') || user.value.permissions.includes(perm))
+  // The backend expands legacy shared keys ('products' / 'formula' /
+  // 'config') into per-menu keys on every response; expand here too so a
+  // user object cached in sessionStorage from before the split still
+  // resolves its menus until the next /me refresh.
+  const LEGACY_PERM_EXPANSIONS = {
+    products: ['goods', 'brands'],
+    formula: ['formula-colors', 'color-numbers', 'masterbatches', 'car-brands', 'car-models', 'formula-dicts'],
+    config: ['theme-config', 'navigation', 'site-config', 'profile', 'pages', 'footer']
+  }
+  const expandedPerms = computed(() => {
+    const out = new Set()
+    for (const p of Array.isArray(user.value?.permissions) ? user.value.permissions : []) {
+      for (const k of LEGACY_PERM_EXPANSIONS[p] || [p]) out.add(k)
+    }
+    return out
+  })
+  const can = (perm) => !!perm && (expandedPerms.value.has('*') || expandedPerms.value.has(perm))
 
   async function login(username, password) {
     const data = await api('/api/admin/login', {
