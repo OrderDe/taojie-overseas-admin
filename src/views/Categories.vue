@@ -15,7 +15,12 @@
       </el-table-column>
       <el-table-column label="层级" width="85"><template #default="{ row }">第 {{ row.level }} 级</template></el-table-column>
       <el-table-column label="ID" width="170" prop="id" />
-      <el-table-column label="含下级商品数" width="100" prop="count" />
+      <el-table-column label="含下级商品数" width="110">
+        <template #default="{ row }">
+          <el-button v-if="row.count > 0" link type="primary" @click="viewProducts(row)">{{ row.count }}</el-button>
+          <span v-else>0</span>
+        </template>
+      </el-table-column>
       <el-table-column label="排序" width="90" prop="sort" />
       <el-table-column label="操作" width="240">
         <template #default="{ row }">
@@ -62,6 +67,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, run } from '../api/client'
 import { displayName, emptyNames } from '../utils/names'
@@ -69,6 +75,7 @@ import { categoryTree, descendantIds } from '../utils/categories'
 import NamesFields from '../components/NamesFields.vue'
 import BatchTranslateDialog from '../components/BatchTranslateDialog.vue'
 
+const router = useRouter()
 const rows = ref([])
 const keyword = ref('')
 const page = ref(1)
@@ -87,6 +94,13 @@ const parentOptions = computed(() => {
   const height = current ? Math.max(0, ...rows.value.filter(row => descendants.has(row.id)).map(row => row.level - current.level)) : 0
   return categoryTree(rows.value, { excludeId: editingId.value, maxLevel: 2 - height })
 })
+
+// Clicking the subtree product count lands on the product list
+// pre-filtered to this category with「含下级」on — the same subtree
+// the count itself was computed from, so the totals always agree.
+function viewProducts(row) {
+  router.push({ name: 'products', query: { categoryId: String(row.id), includeChildren: '1' } })
+}
 
 async function load() {
   loading.value = true

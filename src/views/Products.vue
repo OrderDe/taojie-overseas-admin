@@ -10,6 +10,7 @@
       />
       <el-tree-select v-model="filterCategory" :data="categoryOptions" node-key="id" check-strictly clearable filterable
         :render-after-expand="false" placeholder="全部分类" style="width:220px" />
+      <el-checkbox v-model="includeChildren" :disabled="!filterCategory">含下级分类</el-checkbox>
       <el-select v-model="filterBrand" placeholder="全部品牌" clearable style="width: 180px">
         <el-option
           v-for="b in brands"
@@ -182,6 +183,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, run } from '../api/client'
 import { displayName, emptyNames, specsToText, textToSpecs } from '../utils/names'
@@ -191,12 +193,22 @@ import BatchTranslateDialog from '../components/BatchTranslateDialog.vue'
 import ImageField from '../components/ImageField.vue'
 import VideoField from '../components/VideoField.vue'
 
+const route = useRoute()
 const currency = ref('CNY')
 const products = ref([])
 const categories = ref([])
 const brands = ref([])
 const categoryOptions = computed(() => categoryTree(categories.value))
-const filterCategoryIds = computed(() => descendantIds(categories.value, filterCategory.value))
+// Category filter scope: with「含下级分类」on (default, and what the
+// category page's product-count click-through asks for) the filter
+// covers the category's whole subtree; off = the exact category only.
+const includeChildren = ref(true)
+const filterCategoryIds = computed(() => {
+  if (!filterCategory.value) return new Set()
+  return includeChildren.value
+    ? descendantIds(categories.value, filterCategory.value)
+    : new Set([String(filterCategory.value)])
+})
 const loading = ref(false)
 const saving = ref(false)
 const keyword = ref('')
@@ -206,7 +218,7 @@ const filterStatus = ref('')
 const page = ref(1)
 const pageSize = 20
 
-watch([filterCategory, filterBrand, filterStatus], () => { page.value = 1 })
+watch([filterCategory, filterBrand, filterStatus, includeChildren], () => { page.value = 1 })
 
 const dialogVisible = ref(false)
 const batchVisible = ref(false)
@@ -351,7 +363,16 @@ async function onDelete(row) {
   }
 }
 
-onMounted(loadAll)
+// Arriving from the category page's「含下级商品数」click carries
+// ?categoryId=…&includeChildren=1: preset the filter before loading.
+onMounted(() => {
+  const q = route.query || {}
+  if (q.categoryId) {
+    filterCategory.value = String(q.categoryId)
+    includeChildren.value = q.includeChildren !== '0' && q.includeChildren !== 'false'
+  }
+  loadAll()
+})
 </script>
 
 <style scoped>
