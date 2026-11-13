@@ -8,14 +8,8 @@
         style="width: 240px"
         @input="page = 1"
       />
-      <el-select v-model="filterCategory" placeholder="全部分类" clearable style="width: 180px">
-        <el-option
-          v-for="c in categories"
-          :key="c.id"
-          :label="displayName(c.names)"
-          :value="c.id"
-        />
-      </el-select>
+      <el-tree-select v-model="filterCategory" :data="categoryOptions" node-key="id" check-strictly clearable filterable
+        :render-after-expand="false" placeholder="全部分类" style="width:220px" />
       <el-select v-model="filterBrand" placeholder="全部品牌" clearable style="width: 180px">
         <el-option
           v-for="b in brands"
@@ -47,8 +41,8 @@
       <el-table-column label="品牌" width="130">
         <template #default="{ row }">{{ brandName(row.brandId) }}</template>
       </el-table-column>
-      <el-table-column label="价格 (USD)" width="110">
-        <template #default="{ row }">${{ row.price }}</template>
+      <el-table-column :label="'价格 (' + currency + ')'" width="110">
+        <template #default="{ row }">{{ Number(row.price).toFixed(2) }}</template>
       </el-table-column>
       <el-table-column label="MOQ" width="80" prop="moq" />
       <el-table-column label="销量" width="80" prop="sales" />
@@ -82,14 +76,8 @@
       <el-form :model="form" label-width="110px">
         <NamesFields :model="form.names" />
         <el-form-item label="分类">
-          <el-select v-model="form.categoryId" placeholder="选择分类" style="width: 100%">
-            <el-option
-              v-for="c in categories"
-              :key="c.id"
-              :label="displayName(c.names)"
-              :value="c.id"
-            />
-          </el-select>
+          <el-tree-select v-model="form.categoryId" :data="categoryOptions" node-key="id" check-strictly filterable
+            :render-after-expand="false" placeholder="选择分类（支持三级）" style="width:100%" />
         </el-form-item>
         <el-form-item label="品牌">
           <el-select v-model="form.brandId" placeholder="无品牌" clearable style="width: 100%">
@@ -103,12 +91,12 @@
         </el-form-item>
         <el-row :gutter="12">
           <el-col :span="8">
-            <el-form-item label="价格 (USD)">
+            <el-form-item :label="'价格 (' + currency + ')'">
               <el-input-number v-model="form.price" :min="0" :precision="2" :step="0.1" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="原价 (USD)">
+            <el-form-item :label="'原价 (' + currency + ')'">
               <el-input-number v-model="form.otPrice" :min="0" :precision="2" :step="0.1" />
             </el-form-item>
           </el-col>
@@ -175,14 +163,18 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, run } from '../api/client'
 import { displayName, emptyNames, specsToText, textToSpecs } from '../utils/names'
+import { categoryTree, categoryPath, descendantIds } from '../utils/categories'
 import NamesFields from '../components/NamesFields.vue'
 import BatchTranslateDialog from '../components/BatchTranslateDialog.vue'
 import ImageField from '../components/ImageField.vue'
 import VideoField from '../components/VideoField.vue'
 
+const currency = ref('CNY')
 const products = ref([])
 const categories = ref([])
 const brands = ref([])
+const categoryOptions = computed(() => categoryTree(categories.value))
+const filterCategoryIds = computed(() => descendantIds(categories.value, filterCategory.value))
 const loading = ref(false)
 const saving = ref(false)
 const keyword = ref('')
@@ -204,10 +196,7 @@ function blankForm() {
   }
 }
 
-const categoryName = (id) => {
-  const c = categories.value.find((x) => x.id === id)
-  return c ? displayName(c.names) : (id || '-')
-}
+const categoryName = (id) => categoryPath(categories.value, id) || id || '-'
 const brandName = (id) => {
   const b = brands.value.find((x) => x.id === id)
   return b ? displayName(b.names) : (id || '-')
@@ -216,7 +205,7 @@ const brandName = (id) => {
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
   return products.value.filter((p) => {
-    if (filterCategory.value && p.categoryId !== filterCategory.value) return false
+    if (filterCategory.value && !filterCategoryIds.value.has(String(p.categoryId))) return false
     if (filterBrand.value && p.brandId !== filterBrand.value) return false
     if (kw && !Object.values(p.names || {}).join(' ').toLowerCase().includes(kw)) return false
     return true
@@ -229,11 +218,13 @@ const paged = computed(() =>
 async function loadAll() {
   loading.value = true
   try {
-    const [ps, cs, bs] = await Promise.all([
+    const [ps, cs, bs, config] = await Promise.all([
       api('/api/admin/products'),
       api('/api/admin/categories'),
-      api('/api/admin/brands')
+      api('/api/admin/brands'),
+      api('/api/site-config')
     ])
+    currency.value = config?.currency || 'CNY'
     products.value = ps || []
     categories.value = cs || []
     brands.value = bs || []

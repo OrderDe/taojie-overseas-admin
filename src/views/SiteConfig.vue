@@ -62,7 +62,7 @@
               <el-option label="打开外部链接" value="external" />
             </el-select>
             <el-select v-if="item.type === 'category'" v-model="item.categoryId" placeholder="选择分类" style="width: 260px">
-              <el-option v-for="c in categories" :key="c.id" :label="displayName(c.names)" :value="String(c.id)" />
+              <el-option v-for="c in categories" :key="c.id" :label="categoryPath(categories, c.id)" :value="String(c.id)" />
             </el-select>
             <el-select v-else-if="item.type === 'anchor'" v-model="item.link" placeholder="选择区块" style="width: 200px">
               <el-option label="商品列表" value="#catalogue" />
@@ -118,6 +118,7 @@ import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api, run } from '../api/client'
 import { displayName } from '../utils/names'
+import { categoryPath } from '../utils/categories'
 import ImageField from '../components/ImageField.vue'
 
 // Base currencies the stored prices can be entered in (site-config

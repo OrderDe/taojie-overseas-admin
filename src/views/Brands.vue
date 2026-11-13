@@ -1,6 +1,7 @@
 <template>
   <div>
     <div class="toolbar">
+      <el-input v-model="keyword" placeholder="搜索品牌名或 ID" clearable style="width: 280px" @input="page = 1" />
       <el-button type="primary" @click="openCreate">新建品牌</el-button>
       <el-button @click="load">刷新</el-button>
       <el-button type="primary" plain @click="batchVisible = true">批量翻译未译名称</el-button>
@@ -8,7 +9,7 @@
 
     <BatchTranslateDialog v-model="batchVisible" kind="brands" entityLabel="品牌" @done="load" />
 
-    <el-table :data="rows" v-loading="loading" stripe>
+    <el-table :data="paged" v-loading="loading" stripe>
       <el-table-column label="Logo" width="90">
         <template #default="{ row }">
           <el-image v-if="row.logo" :src="row.logo" class="thumb" fit="contain" />
@@ -33,6 +34,7 @@
         </template>
       </el-table-column>
     </el-table>
+    <el-pagination style="margin-top: 14px" layout="total, prev, pager, next" :total="filtered.length" :page-size="20" v-model:current-page="page" />
     <el-empty v-if="!loading && rows.length === 0" description="暂无品牌，在商品里选品牌前先来这里建" />
 
     <el-dialog
@@ -69,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, run } from '../api/client'
 import { displayName, emptyNames } from '../utils/names'
@@ -78,6 +80,13 @@ import BatchTranslateDialog from '../components/BatchTranslateDialog.vue'
 import ImageField from '../components/ImageField.vue'
 
 const rows = ref([])
+const keyword = ref('')
+const page = ref(1)
+const filtered = computed(() => {
+  const term = keyword.value.trim().toLowerCase()
+  return rows.value.filter(row => !term || (Object.values(row.names || {}).join(' ') + ' ' + row.id).toLowerCase().includes(term))
+})
+const paged = computed(() => filtered.value.slice((page.value - 1) * 20, page.value * 20))
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)

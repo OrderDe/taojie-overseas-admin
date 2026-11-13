@@ -10,10 +10,10 @@ export function emptyNames() {
   return Object.fromEntries(REGISTRY.map((l) => [l.code, '']))
 }
 
-// Display name for tables: English first, then Chinese, then any value.
+// The management UI displays Chinese first, then English, then any value.
 export function displayName(names) {
   if (!names) return '-'
-  return names.en || names.zh || Object.values(names).find(Boolean) || '-'
+  return names.zh || names.en || Object.values(names).find(Boolean) || '-'
 }
 
 // specs are edited as "Key: Value" lines in the product form.

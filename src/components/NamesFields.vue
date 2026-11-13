@@ -25,6 +25,7 @@ import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { LANGS, TARGET_CODES, langByCode } from '../utils/langs'
 import { api } from '../api/client'
+import { isUntranslatedName } from '../utils/translationNames'
 
 const props = defineProps({
   model: { type: Object, required: true }
@@ -55,7 +56,7 @@ async function onTranslate() {
     const translations = (r && r.translations) || {}
     let filled = 0
     for (const key of TARGET_CODES) {
-      if (translations[key] && !(props.model[key] || '').trim()) {
+      if (translations[key] && isUntranslatedName(props.model[key], text)) {
         props.model[key] = translations[key]
         filled++
       }

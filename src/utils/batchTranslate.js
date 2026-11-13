@@ -20,6 +20,7 @@
 import { api } from '../api/client'
 import { TARGET_CODES, langByCode } from './langs'
 import { displayName } from './names'
+import { isUntranslatedName } from './translationNames'
 
 export const BATCH_KINDS = {
   products: {
@@ -35,7 +36,7 @@ export const BATCH_KINDS = {
     endpoint: '/api/admin/categories',
     updatePath: (item) => `/api/admin/categories/${encodeURIComponent(item.id)}`,
     buildPayload(item, names) {
-      return { names, sort: item.sort || 0 }
+      return { names, sort: item.sort || 0, parentId: item.parentId || '' }
     }
   },
   brands: {
@@ -54,7 +55,7 @@ const isBlank = (v) => !String(v || '').trim()
 export function missingTargets(item) {
   const names = item.names || {}
   if (isBlank(names.zh)) return null
-  const missing = TARGET_CODES.filter((c) => isBlank(names[c]))
+  const missing = TARGET_CODES.filter((c) => isUntranslatedName(names[c], names.zh))
   return missing.length ? missing : null
 }
 
@@ -133,7 +134,7 @@ export async function runBatchTranslate(kind, onProgress) {
     const names = { ...(item.names || {}) }
     let filledAny = false
     for (const code of missing) {
-      if (translations[code] && isBlank(names[code])) {
+      if (translations[code] && isUntranslatedName(names[code], names.zh)) {
         names[code] = translations[code]
         filledAny = true
       }
