@@ -47,7 +47,11 @@
       </el-form-item>
       <el-form-item label="显示『成为经销商』卡片">
         <el-switch v-model="cfg.showDealer" />
-        <span class="note">现在不用就关掉，以后想招经销商再打开</span>
+        <span class="note">现在不用就关掉，以后想招经销商再打开；联系方式卡开着时以联系方式卡为准</span>
+      </el-form-item>
+      <el-form-item label="显示首页联系方式卡">
+        <el-switch v-model="cfg.showContact" />
+        <span class="note">首页英雄区右侧那张卡，只显示出口热线、WhatsApp 和邮箱，不带『经销商』字样；号码在下面的卡片区和本页上方填写</span>
       </el-form-item>
 
       <el-divider content-position="left">首页导航菜单</el-divider>
@@ -67,7 +71,7 @@
             <el-select v-else-if="item.type === 'anchor'" v-model="item.link" placeholder="选择区块" style="width: 200px">
               <el-option label="商品列表" value="#catalogue" />
               <el-option label="品牌介绍" value="#story" />
-              <el-option label="经销商卡" value="#dealer" />
+              <el-option label="联系方式卡" value="#dealer" />
               <el-option label="回到顶部" value="#top" />
             </el-select>
             <el-input v-else-if="item.type === 'external'" v-model="item.link" placeholder="网址，如 https://example.com" style="width: 260px" />
@@ -83,7 +87,7 @@
         <el-input v-model="cfg.heroEyebrow" placeholder="如 F · EDITORIAL WHOLESALE，留空则显示主题名" />
       </el-form-item>
 
-      <el-divider content-position="left">经销商卡</el-divider>
+      <el-divider content-position="left">首页右侧卡片（联系方式 / 经销商）</el-divider>
       <el-form-item label="卡片标题">
         <el-input v-model="cfg.dealerTitle" placeholder="留空则用前台默认文案" />
       </el-form-item>
@@ -95,6 +99,7 @@
       </el-form-item>
       <el-form-item label="出口热线">
         <el-input v-model="cfg.hotline" placeholder="如 +86 20 8888 8888" style="width: 260px" />
+        <span class="note">显示在首页联系方式卡上；WhatsApp 和邮箱在本页上方填写</span>
       </el-form-item>
 
       <el-divider content-position="left">首页品牌介绍</el-divider>
@@ -133,7 +138,7 @@ const BASE_CURRENCIES = [
 
 const cfg = reactive({
   logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
-  announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showDealer: false,
+  announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showDealer: false, showContact: true,
   navItems: [], heroEyebrow: '', dealerTitle: '', dealerText: '',
   dealerButton: '', hotline: '', storyTitle: '', storyText: ''
 })
