@@ -102,6 +102,24 @@
         <span class="note">显示在首页联系方式卡上；WhatsApp 和邮箱在本页上方填写</span>
       </el-form-item>
 
+      <el-divider content-position="left">社交账号跳转（前台悬浮联系面板）</el-divider>
+      <el-form-item label="TikTok">
+        <el-input v-model="cfg.tiktok" placeholder="主页完整链接，如 https://www.tiktok.com/@yourname" />
+      </el-form-item>
+      <el-form-item label="Instagram">
+        <el-input v-model="cfg.instagram" placeholder="主页完整链接，如 https://www.instagram.com/yourname" />
+      </el-form-item>
+      <el-form-item label="Facebook">
+        <el-input v-model="cfg.facebook" placeholder="主页完整链接" />
+      </el-form-item>
+      <el-form-item label="YouTube">
+        <el-input v-model="cfg.youtube" placeholder="频道完整链接" />
+      </el-form-item>
+      <el-form-item label="微信号">
+        <el-input v-model="cfg.wechat" placeholder="微信号，客人点击后复制" style="width: 260px" />
+        <span class="note">留空的平台前台不显示图标；邮箱、电话、WhatsApp 图标用本页已填的邮箱、出口热线和 WhatsApp</span>
+      </el-form-item>
+
       <el-divider content-position="left">首页品牌介绍</el-divider>
       <el-form-item label="介绍标题">
         <el-input v-model="cfg.storyTitle" placeholder="留空则用前台默认文案" />
@@ -141,7 +159,8 @@ const cfg = reactive({
   logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
   announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showDealer: false, showContact: true,
   navItems: [], heroEyebrow: '', dealerTitle: '', dealerText: '',
-  dealerButton: '', hotline: '', storyTitle: '', storyText: ''
+  dealerButton: '', hotline: '', storyTitle: '', storyText: '',
+  tiktok: '', instagram: '', facebook: '', youtube: '', wechat: ''
 })
 
 // New rows default to jumping to a category; the admin picks which one.
