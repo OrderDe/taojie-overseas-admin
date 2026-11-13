@@ -47,7 +47,10 @@
         <template #default="{ row }">{{ brandName(row.brandId) }}</template>
       </el-table-column>
       <el-table-column :label="'价格 (' + currency + ')'" width="110">
-        <template #default="{ row }">{{ Number(row.price).toFixed(2) }}</template>
+        <template #default="{ row }">
+          <el-tag v-if="row.negotiable" type="warning">面议</el-tag>
+          <span v-else>{{ Number(row.price).toFixed(2) }}</span>
+        </template>
       </el-table-column>
       <el-table-column label="MOQ" width="80" prop="moq" />
       <el-table-column label="销量" width="80" prop="sales" />
@@ -97,12 +100,12 @@
         <el-row :gutter="12">
           <el-col :span="8">
             <el-form-item :label="'价格 (' + currency + ')'">
-              <el-input-number v-model="form.price" :min="0" :precision="2" :step="0.1" />
+              <el-input-number v-model="form.price" :min="0" :precision="2" :step="0.1" :disabled="form.negotiable" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item :label="'原价 (' + currency + ')'">
-              <el-input-number v-model="form.otPrice" :min="0" :precision="2" :step="0.1" />
+              <el-input-number v-model="form.otPrice" :min="0" :precision="2" :step="0.1" :disabled="form.negotiable" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -111,6 +114,10 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-form-item label="面议">
+          <el-switch v-model="form.negotiable" />
+          <span class="hint">开启后前台不显示数字价格、只显示「面议」，且不可加入购物车（仅询价）；价格仍保留，关掉面议即恢复显示</span>
+        </el-form-item>
         <el-row :gutter="12">
           <el-col :span="8">
             <el-form-item label="单位">
@@ -199,7 +206,7 @@ const form = reactive(blankForm())
 function blankForm() {
   return {
     id: null, sourceId: '', categoryId: '', brandId: '', names: emptyNames(),
-    price: 0, otPrice: 0, sales: 0, unit: 'pc', moq: 0, image: '', video: '', tag: '',
+    price: 0, otPrice: 0, negotiable: false, sales: 0, unit: 'pc', moq: 0, image: '', video: '', tag: '',
     blurb: '', sort: 0, active: true
   }
 }
@@ -297,5 +304,6 @@ onMounted(loadAll)
 .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .thumb { width: 52px; height: 40px; border-radius: 4px; }
 .no-img { color: var(--adm-text-3); font-size: 12px; }
+.hint { margin-left: 10px; color: var(--adm-text-3); font-size: 12px; }
 .pager { margin-top: 14px; justify-content: flex-end; }
 </style>
