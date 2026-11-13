@@ -45,6 +45,10 @@
         <el-switch v-model="cfg.showCart" />
         <span class="note">关掉后前台只保留询价，适合询盘站</span>
       </el-form-item>
+      <el-form-item label="显示商品价格">
+        <el-switch v-model="cfg.showPrices" />
+        <span class="note">关掉后全站商品按面议展示、不显示价格、不能加购，只保留询价</span>
+      </el-form-item>
       <el-form-item label="显示『成为经销商』卡片">
         <el-switch v-model="cfg.showDealer" />
         <span class="note">现在不用就关掉，以后想招经销商再打开；联系方式卡开着时以联系方式卡为准</span>
@@ -128,7 +132,7 @@ const BASE_CURRENCIES = [
 
 const cfg = reactive({
   logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
-  announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showDealer: false, showContact: true,
+  announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showPrices: true, showDealer: false, showContact: true,
   heroEyebrow: '', dealerTitle: '', dealerText: '',
   dealerButton: '', hotline: '', storyTitle: '', storyText: '',
   tiktok: '', instagram: '', facebook: '', youtube: '', wechat: ''
