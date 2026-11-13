@@ -83,6 +83,14 @@
         <el-input v-model="cfg.hotline" placeholder="如 +86 20 8888 8888" style="width: 260px" />
         <span class="note">显示在首页联系方式卡上；WhatsApp 和邮箱在本页上方填写</span>
       </el-form-item>
+      <el-form-item label="联系销售按钮点击后">
+        <el-select v-model="cfg.salesBtnAction" style="width: 260px">
+          <el-option label="弹出联系方式" value="contact" />
+          <el-option label="打开免费获取报价表单" value="rfq" />
+          <el-option label="打开在线咨询" value="chat" />
+        </el-select>
+        <span class="note">首页右侧卡片上「联系销售」按钮的行为；联系方式弹窗里显示上方填好的热线、WhatsApp、邮箱和微信号</span>
+      </el-form-item>
 
       <el-divider content-position="left">社交账号跳转（前台悬浮联系面板）</el-divider>
       <el-form-item label="TikTok">
@@ -139,7 +147,7 @@ const cfg = reactive({
   logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
   announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showPrices: true, showDealer: false, showContact: true,
   heroEyebrow: '', searchPlaceholder: {}, dealerTitle: '', dealerText: '',
-  dealerButton: '', hotline: '', storyTitle: '', storyText: '',
+  dealerButton: '', hotline: '', salesBtnAction: 'contact', storyTitle: '', storyText: '',
   tiktok: '', instagram: '', facebook: '', youtube: '', wechat: ''
 })
 
