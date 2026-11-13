@@ -38,6 +38,11 @@
           <span>{{ regionLabel(s) }}</span>
           <span v-if="deviceLabel(s.device)"> · {{ deviceLabel(s.device) }}</span>
         </div>
+        <div v-if="s.product && s.product.name" class="s-product">
+          <img v-if="s.product.image" :src="s.product.image" alt="" @error="$event.target.remove()" />
+          <span class="s-product-name">🛒 {{ s.product.name }}</span>
+          <el-tag size="small" type="warning" effect="plain">{{ s.product.negotiable ? '面议' : (s.product.priceLabel || '') }}</el-tag>
+        </div>
         <div class="s-preview">{{ s.lastMessage || '（暂无消息）' }}</div>
       </div>
       <el-empty v-if="!loadingSessions && filteredSessions.length === 0" description="暂无聊天会话" />
@@ -60,6 +65,12 @@
             <span>语言：{{ sessionInfo.lang || '-' }}</span>
             <span>当前页：{{ sessionInfo.currentPage || '-' }}</span>
             <span>浏览页数：{{ sessionInfo.pageViews ?? 0 }}</span>
+            <span v-if="sessionInfo.product && sessionInfo.product.name" class="p-wide p-product">
+              咨询商品：
+              <img v-if="sessionInfo.product.image" :src="sessionInfo.product.image" alt="" @error="$event.target.remove()" />
+              <b>{{ sessionInfo.product.name }}</b>
+              <el-tag size="small" type="warning" effect="plain">{{ sessionInfo.product.negotiable ? '面议' : (sessionInfo.product.priceLabel || '') }}</el-tag>
+            </span>
             <span class="p-wide">来源：{{ sessionInfo.referrer || '直接访问' }}</span>
             <span class="p-wide">
               状态：{{ sessionInfo.online ? '在线' : '离线' }} · 已发 {{ sessionInfo.msgCount ?? 0 }} 条消息
@@ -440,6 +451,11 @@ onBeforeUnmount(() => {
   color: var(--adm-text-3); font-size: 12.5px; margin-top: 2px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.s-product { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12.5px; }
+.s-product img { width: 22px; height: 22px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.s-product-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--adm-text-2); }
+.p-product { display: flex; align-items: center; gap: 6px; }
+.p-product img { width: 26px; height: 26px; object-fit: cover; border-radius: 4px; }
 .thread {
   flex: 1; min-width: 0; background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius);
   padding: 16px; display: flex; flex-direction: column; max-height: calc(100vh - 150px);
