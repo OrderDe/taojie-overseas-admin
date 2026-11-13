@@ -105,12 +105,14 @@
           <el-checkbox-group v-model="roleForm.permissions" :disabled="roleIsBuiltin">
             <el-checkbox value="*" class="perm-check">全部权限（超级管理员）</el-checkbox>
             <el-checkbox
-              v-for="p in permDefs"
+              v-for="p in menuPermissionDefs"
               :key="p.key"
               :value="p.key"
               class="perm-check"
             >{{ p.label }}</el-checkbox>
           </el-checkbox-group>
+          <div class="permission-help">同一项内的菜单共用权限，勾选后一起开放。</div>
+          <div class="permission-help">登录后可用：{{ sharedMenuLabels }}（无需单独授权）。</div>
           <div v-if="roleIsBuiltin" class="note">内置角色的权限固定为全部，不可修改</div>
         </el-form-item>
       </el-form>
@@ -126,10 +128,16 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, run } from '../api/client'
+import { MENU } from '../router'
 
 const users = ref([])
 const roles = ref([])
 const permDefs = ref([])
+const menuPermissionDefs = computed(() => permDefs.value.map((permission) => {
+  const menus = MENU.filter((menu) => menu.perm === permission.key)
+  return { ...permission, label: menus.length ? menus.map((menu) => menu.title).join(' / ') : permission.label }
+}))
+const sharedMenuLabels = MENU.filter((menu) => !menu.perm).map((menu) => menu.title).join('、')
 const loading = ref(false)
 const saving = ref(false)
 
@@ -150,7 +158,7 @@ function permLabels(role) {
   if (!role.permissions) return []
   if (role.permissions.includes('*')) return ['全部权限']
   return role.permissions.map((k) => {
-    const def = permDefs.value.find((p) => p.key === k)
+    const def = menuPermissionDefs.value.find((p) => p.key === k)
     return def ? def.label : k
   })
 }
@@ -269,5 +277,6 @@ onMounted(load)
 .section-title { font-size: 15px; font-weight: 600; margin: 6px 0 12px; color: var(--adm-text); }
 .perm-tag { margin-right: 6px; margin-bottom: 2px; }
 .perm-check { display: block; margin-bottom: 6px; }
+.permission-help { width: 100%; color: var(--adm-text-muted, #6b7280); font-size: 12px; line-height: 1.6; margin-top: 6px; }
 .note { color: #b45309; font-size: 12px; margin-top: 6px; }
 </style>

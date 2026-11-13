@@ -18,6 +18,11 @@
           :value="b.id"
         />
       </el-select>
+      <el-select v-model="filterStatus" aria-label="上下架状态" placeholder="全部状态" clearable style="width: 140px">
+        <el-option label="全部状态" value="" />
+        <el-option label="上架" value="on" />
+        <el-option label="下架" value="off" />
+      </el-select>
       <el-button type="primary" @click="openCreate">新建商品</el-button>
       <el-button @click="loadAll">刷新</el-button>
       <el-button type="primary" plain @click="batchVisible = true">批量翻译未译名称</el-button>
@@ -159,7 +164,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api, run } from '../api/client'
 import { displayName, emptyNames, specsToText, textToSpecs } from '../utils/names'
@@ -180,8 +185,11 @@ const saving = ref(false)
 const keyword = ref('')
 const filterCategory = ref('')
 const filterBrand = ref('')
+const filterStatus = ref('')
 const page = ref(1)
 const pageSize = 20
+
+watch([filterCategory, filterBrand, filterStatus], () => { page.value = 1 })
 
 const dialogVisible = ref(false)
 const batchVisible = ref(false)
@@ -207,6 +215,8 @@ const filtered = computed(() => {
   return products.value.filter((p) => {
     if (filterCategory.value && !filterCategoryIds.value.has(String(p.categoryId))) return false
     if (filterBrand.value && p.brandId !== filterBrand.value) return false
+    if (filterStatus.value === 'on' && !p.active) return false
+    if (filterStatus.value === 'off' && p.active) return false
     if (kw && !Object.values(p.names || {}).join(' ').toLowerCase().includes(kw)) return false
     return true
   })
