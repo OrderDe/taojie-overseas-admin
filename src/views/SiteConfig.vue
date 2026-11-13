@@ -64,6 +64,10 @@
       <el-form-item label="大标题上方小字">
         <el-input v-model="cfg.heroEyebrow" placeholder="如 F · EDITORIAL WHOLESALE，留空则不显示" />
       </el-form-item>
+      <el-form-item label="搜索框提示字">
+        <span class="note" style="margin-left: 0">顶栏搜索框里的灰色提示字，按语言填写；留空的语言用默认文案</span>
+      </el-form-item>
+      <NamesFields :model="cfg.searchPlaceholder" />
 
       <el-divider content-position="left">首页右侧卡片（联系方式 / 经销商）</el-divider>
       <el-form-item label="卡片标题">
@@ -118,6 +122,7 @@ import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api, run } from '../api/client'
 import ImageField from '../components/ImageField.vue'
+import NamesFields from '../components/NamesFields.vue'
 
 // Base currencies the stored prices can be entered in (site-config
 // baseCurrency). The storefront converts from this into the visitor's
@@ -133,7 +138,7 @@ const BASE_CURRENCIES = [
 const cfg = reactive({
   logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
   announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showPrices: true, showDealer: false, showContact: true,
-  heroEyebrow: '', dealerTitle: '', dealerText: '',
+  heroEyebrow: '', searchPlaceholder: {}, dealerTitle: '', dealerText: '',
   dealerButton: '', hotline: '', storyTitle: '', storyText: '',
   tiktok: '', instagram: '', facebook: '', youtube: '', wechat: ''
 })
