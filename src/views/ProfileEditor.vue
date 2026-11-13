@@ -5,14 +5,26 @@
       <el-button :disabled="saving" @click="load">重新加载</el-button>
     </div>
     <p class="help">
-      前台「公司简介」页是本站原生页面：顶部样式带的标题用站点配置里的「介绍标题」、副文案用「介绍正文」，
-      下面依次显示这里的轮播图、章节、图库、客户评价和常见问题，最下方是联系方式卡。章节可配一张图（显示在标题下方），
+      前台「公司简介」页是本站原生页面：最上方是这里的「页面横幅」（全幅背景图 + 大标题 + 副标题），
+      下面依次是产品分类与精选产品（自动取 WILLIS 分类的真实商品）、章节（「关于我们」左文右图、
+      「出口市场与服务」的要点显示为特性卡、「质量与认证」「技术团队」等章节双列排布、「我们的工厂」配图库）、
+      客户评价、常见问题，最下方是「企业概况」与联系方式卡组成的深色带。轮播图为旧版式保留字段，前台新版式不再显示。
       正文用空行分段。文字可填 12 种语言，前台按客人当前语言显示，
       缺的语言自动用英文、再用第一个已填语言兜底。这里全部留空时，前台只显示文字版简介（介绍标题 + 介绍正文）。
     </p>
 
     <el-form label-width="110px">
-      <el-divider content-position="left">顶部轮播图</el-divider>
+      <el-divider content-position="left">页面横幅</el-divider>
+      <p class="field-label">横幅标题</p>
+      <NamesFields :model="content.banner.title" />
+      <p class="field-label">横幅副标题</p>
+      <NamesFields :model="content.banner.subtitle" />
+      <p class="field-label">横幅背景图</p>
+      <div class="img-row">
+        <div class="img-main"><ImageField v-model="content.banner.image" /></div>
+      </div>
+
+      <el-divider content-position="left">顶部轮播图（旧版式保留，新版式不显示）</el-divider>
       <div v-for="(img, i) in content.heroImages" :key="'hero-' + i" class="img-row">
         <div class="img-main"><ImageField v-model="content.heroImages[i]" /></div>
         <el-button type="danger" plain @click="content.heroImages.splice(i, 1)">删除</el-button>
@@ -151,7 +163,7 @@ const loaded = ref(false)
 // only profileContent replaced (same load/save pattern as SiteConfig),
 // so fields managed elsewhere are never clobbered from this page.
 let fullConfig = null
-const content = reactive({ heroImages: [], sections: [], gallery: [], faqs: [], testimonials: [] })
+const content = reactive({ banner: { title: {}, subtitle: {}, image: '' }, heroImages: [], sections: [], gallery: [], faqs: [], testimonials: [] })
 // Per-entry「更多语言」collapse state for the multi-line editors, keyed
 // by each entry's editor-only id (stripped again when saving).
 const bodyMore = reactive({})
@@ -202,8 +214,19 @@ function normalizeTestimonial(x) {
   return tm
 }
 
+function normalizeBanner(b) {
+  return {
+    title: namesObj(b && b.title),
+    subtitle: namesObj(b && b.subtitle),
+    image: typeof (b && b.image) === 'string' ? b.image : ''
+  }
+}
+
 function normalizeContent(raw) {
   const c = raw && typeof raw === 'object' ? raw : {}
+  // Older content has no banner key at all: default to the empty
+  // banner so the editor opens cleanly and never drops old data.
+  content.banner = normalizeBanner(c.banner)
   content.heroImages = (Array.isArray(c.heroImages) ? c.heroImages : []).filter((u) => typeof u === 'string')
   content.gallery = (Array.isArray(c.gallery) ? c.gallery : []).filter((u) => typeof u === 'string')
   content.sections = (Array.isArray(c.sections) ? c.sections : []).map(normalizeSection)
@@ -269,6 +292,11 @@ function cleanNames(map) {
 async function onSave() {
   if (!fullConfig) return
   const profileContent = {
+    banner: {
+      title: cleanNames(content.banner.title),
+      subtitle: cleanNames(content.banner.subtitle),
+      image: (content.banner.image || '').trim()
+    },
     heroImages: content.heroImages.map((u) => (u || '').trim()).filter(Boolean),
     sections: content.sections.map((s) => ({
       title: cleanNames(s.title),
