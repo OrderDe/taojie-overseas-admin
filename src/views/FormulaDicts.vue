@@ -12,7 +12,11 @@
     </div>
 
     <el-table :data="rows" v-loading="loading" stripe>
-      <el-table-column label="ID" width="90" prop="id" show-overflow-tooltip />
+      <el-table-column label="序号" width="70" align="center">
+        <template #default="{ row, $index }">
+          <span :title="row.id">{{ (page - 1) * pageSize + $index + 1 }}</span>
+        </template>
+      </el-table-column>
       <el-table-column v-for="f in current.fields" :key="f.key" :label="f.label" :min-width="f.width || 130">
         <template #default="{ row }">
           <el-image v-if="f.type === 'image' && row[f.key]" :src="row[f.key]" class="thumb" fit="contain" />

@@ -49,7 +49,11 @@
 
     <el-table :data="paged" v-loading="loading" stripe @selection-change="onSelectionChange">
       <el-table-column type="selection" width="46" />
-      <el-table-column label="ID" width="80" prop="id" show-overflow-tooltip />
+      <el-table-column label="序号" width="70" align="center">
+        <template #default="{ row, $index }">
+          <span :title="row.id">{{ (page - 1) * pageSize + $index + 1 }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="图片" width="76">
         <template #default="{ row }">
           <el-image v-if="row.image" :src="row.image" class="thumb" fit="cover" />

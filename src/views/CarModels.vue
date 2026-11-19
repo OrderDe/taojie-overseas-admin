@@ -11,7 +11,11 @@
     </div>
 
     <el-table :data="rows" v-loading="loading" stripe>
-      <el-table-column label="ID" width="90" prop="id" show-overflow-tooltip />
+      <el-table-column label="序号" width="70" align="center">
+        <template #default="{ row, $index }">
+          <span :title="row.id">{{ (page - 1) * pageSize + $index + 1 }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="车型" min-width="200" prop="model" />
       <el-table-column label="品牌" min-width="160">
         <template #default="{ row }">{{ brandName(row.brandId) || row.brand || '' }}</template>

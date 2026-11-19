@@ -14,7 +14,11 @@
         <template #default="{ row }">{{ displayName(row.names) }}</template>
       </el-table-column>
       <el-table-column label="层级" width="85"><template #default="{ row }">第 {{ row.level }} 级</template></el-table-column>
-      <el-table-column label="ID" width="170" prop="id" />
+      <el-table-column label="序号" width="70" align="center">
+        <template #default="{ row, $index }">
+          <span :title="row.id">{{ +row.level === 1 ? (page - 1) * 20 + $index + 1 : '' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="含下级商品数" width="110">
         <template #default="{ row }">
           <el-button v-if="row.count > 0" link type="primary" @click="viewProducts(row)">{{ row.count }}</el-button>
