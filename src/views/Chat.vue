@@ -20,6 +20,17 @@
           <el-option label="已结束" value="closed" />
         </el-select>
       </div>
+      <div class="list-settings">
+        <span class="set-label">会话自动结束</span>
+        <el-select v-model="autoCloseHours" size="small" class="set-sel">
+          <el-option label="不自动结束" :value="0" />
+          <el-option label="24 小时无消息" :value="24" />
+          <el-option label="48 小时无消息" :value="48" />
+          <el-option label="7 天无消息" :value="168" />
+          <el-option label="30 天无消息" :value="720" />
+        </el-select>
+        <el-button size="small" :loading="savingSettings" @click="saveChatSettings">保存</el-button>
+      </div>
       <div
         v-for="s in filteredSessions"
         :key="s.id"
@@ -31,6 +42,7 @@
           <span class="dot" :class="{ on: s.online }"></span>
           <span v-if="s.unread" class="unread-dot"></span>
           <b class="s-name">{{ s.visitorName || '访客' }}</b>
+          <el-button class="s-edit" size="small" text title="修改访客名称" @click.stop="editVisitorName(s)">✎</el-button>
           <el-tag v-if="s.suspectBot" size="small" type="danger" effect="plain">疑似机器人</el-tag>
           <el-tag v-if="s.status === 'closed'" size="small" type="info" effect="plain">已结束</el-tag>
           <el-badge v-if="s.unread" :value="s.unread" :max="99" class="unread-badge" />
@@ -46,6 +58,7 @@
           <el-tag size="small" type="warning" effect="plain">{{ s.product.negotiable ? '面议' : (s.product.priceLabel || '') }}</el-tag>
         </div>
         <div class="s-preview">{{ s.lastMessage || '（暂无消息）' }}</div>
+        <div v-if="s.note" class="s-note" :title="s.note">📝 {{ s.note }}</div>
       </div>
       <el-empty v-if="!loadingSessions && filteredSessions.length === 0" description="暂无聊天会话" />
     </div>
@@ -55,6 +68,7 @@
       <template v-if="current">
         <div class="thread-head">
           <b>{{ current.visitorName || '访客' }}</b>
+          <el-button size="small" text title="修改访客名称" @click="editVisitorName(current)">✎ 改名</el-button>
           <span class="note">访客在商城前台的在线聊天，每 4 秒自动刷新</span>
         </div>
 
@@ -172,6 +186,8 @@ const loadingSessions = ref(false)
 const msgBox = ref(null)
 const keyword = ref('')
 const filter = ref('all')
+const autoCloseHours = ref(0)
+const savingSettings = ref(false)
 const emojiOpen = ref(false)
 const soundOn = ref(localStorage.getItem('tj-chat-sound') === '1')
 let timer = null
@@ -383,6 +399,67 @@ async function sendReply() {
   }
 }
 
+// ---- visitor rename (display label only; the visitor's token
+// identity is untouched, and the new name shows in the list at once) ----
+async function editVisitorName(s) {
+  if (!s) return
+  let value
+  try {
+    const r = await ElMessageBox.prompt('给这位访客改个好认的名字（只在后台显示）', '修改访客名称', {
+      confirmButtonText: '保存',
+      cancelButtonText: '取消',
+      inputValue: s.visitorName || '',
+      inputValidator: (v) => {
+        const n = (v || '').trim()
+        if (!n) return '名称不能为空'
+        if (n.length > 64) return '最长 64 个字'
+        return true
+      }
+    })
+    value = r.value.trim()
+  } catch { return /* cancelled */ }
+  try {
+    const resp = await api(`/api/admin/chat/sessions/${s.id}/visitor-name`, {
+      method: 'PUT',
+      body: JSON.stringify({ name: value })
+    })
+    const name = (resp && resp.visitorName) || value
+    const row = sessions.value.find((x) => x.id === s.id)
+    if (row) row.visitorName = name
+    if (current.value && current.value.id === s.id) current.value.visitorName = name
+    if (sessionInfo.value && sessionInfo.value.id === s.id) sessionInfo.value.visitorName = name
+    ElMessage.success('访客名称已修改')
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
+
+// ---- chat settings: idle auto-close window (stored server-side in
+// the site-config table, edited here under the chat permission) ----
+async function loadChatSettings() {
+  try {
+    const r = await api('/api/admin/chat/settings')
+    if (r && typeof r.autoCloseHours === 'number') autoCloseHours.value = r.autoCloseHours
+  } catch { /* keep the 不自动结束 default if the read fails */ }
+}
+
+async function saveChatSettings() {
+  savingSettings.value = true
+  try {
+    const r = await api('/api/admin/chat/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ autoCloseHours: autoCloseHours.value })
+    })
+    if (r && typeof r.autoCloseHours === 'number') autoCloseHours.value = r.autoCloseHours
+    ElMessage.success('自动结束设置已保存')
+    loadSessions(true)
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    savingSettings.value = false
+  }
+}
+
 async function saveNote() {
   if (!current.value) return
   try {
@@ -423,6 +500,7 @@ watch(keyword, () => {
 })
 
 onMounted(async () => {
+  loadChatSettings()
   await loadSessions(false)
   // Desktop notifications deep-link here with ?session=<id>.
   const targetId = route.query.session
@@ -487,6 +565,15 @@ onBeforeUnmount(() => {
   color: var(--adm-text-3); font-size: 12.5px; margin-top: 2px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.s-note {
+  color: var(--adm-text-2); font-size: 12.5px; margin-top: 4px;
+  background: var(--adm-surface-2); border-radius: 4px; padding: 2px 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.s-edit { padding: 0 2px; flex-shrink: 0; }
+.list-settings { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.set-label { font-size: 12.5px; color: var(--adm-text-2); flex-shrink: 0; }
+.set-sel { flex: 1; }
 .s-product { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12.5px; }
 .s-product img { width: 22px; height: 22px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
 .s-product-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--adm-text-2); }

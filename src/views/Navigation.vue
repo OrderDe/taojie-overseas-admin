@@ -8,9 +8,16 @@
     </div>
     <p class="help">管理前台顶部导航，包含配方搜索和公司简介。按表格顺序显示；关闭开关可隐藏。默认名称随前台语言切换，修改名称后使用自定义文字。跳转类型选「自定义页面」时，目标是在「自定义页面」菜单里建好的专页（先去那边建页，再回到这里挂导航）。保存后刷新前台生效。</p>
     <el-table :data="items" row-key="editorId" border>
-      <el-table-column label="名称" min-width="220"><template #default="{ row }">
+      <el-table-column label="名称" min-width="260"><template #default="{ row }">
         <el-input v-model="row.label" placeholder="导航名称" @input="row.labelKey = ''" />
         <span v-if="row.labelKey" class="help">使用默认多语言名称</span>
+        <el-collapse class="nav-names">
+          <el-collapse-item title="多语言名称" name="names">
+            <el-form label-width="100px" @submit.prevent>
+              <NamesFields :model="row.names" />
+            </el-form>
+          </el-collapse-item>
+        </el-collapse>
       </template></el-table-column>
       <el-table-column label="显示" width="78"><template #default="{ row }"><el-switch v-model="row.enabled" :aria-label="row.label + '显示'" /></template></el-table-column>
       <el-table-column label="跳转类型" width="160"><template #default="{ row }">
@@ -46,6 +53,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { api } from '../api/client'
 import { categoryPath } from '../utils/categories'
+import NamesFields from '../components/NamesFields.vue'
 const items=ref([]), categories=ref([]), pages=ref([]), loading=ref(false), saving=ref(false), loaded=ref(false)
 const targets=[{label:'配方搜索',value:'#formula'},{label:'公司简介',value:'#profile'},{label:'商品列表',value:'#catalogue'},{label:'品牌介绍',value:'#story'},{label:'联系方式',value:'#dealer'},{label:'询价表单',value:'#rfq'},{label:'回到顶部',value:'#top'}]
 const labels=['礼品专区','自用专区','热门精选','涂料专区','案例','资讯']
@@ -53,7 +61,8 @@ let nextId=0
 function normalize(item) {
  const link=String(item.link||'')
  const type=['category','anchor','external','page'].includes(item.type)?item.type:/^https?:\/\//i.test(link)?'external':link.startsWith('#')?'anchor':''
- return {...item,editorId:++nextId,label:String(item.label||''),labelKey:String(item.labelKey||''),enabled:item.enabled!==false,type,link,categoryId:String(item.categoryId||'')}
+ const names=(item.names&&typeof item.names==='object'&&!Array.isArray(item.names))?{...item.names}:{}
+ return {...item,editorId:++nextId,label:String(item.label||''),labelKey:String(item.labelKey||''),enabled:item.enabled!==false,type,link,categoryId:String(item.categoryId||''),names}
 }
 function pageLabel(p) {
  const t=p.titles||{}
@@ -81,6 +90,13 @@ async function load(){
  try{pages.value=(await api('/api/admin/pages'))||[]}catch{pages.value=[]}
 }
 async function save(){
+ // The storefront prefers the multi-language `names`; the plain
+ // `label` stays as its fallback, so sync it from names (zh, then en)
+ // before validating — an item named only in the names editor is valid.
+ for(const item of items.value){
+  const fromNames=((item.names&&(item.names.zh||item.names.en))||'').trim()
+  if(fromNames) item.label=fromNames
+ }
  for(const item of items.value){
   if(!item.label.trim()){ElMessage.warning('请填写每条导航的名称');return}
   if(item.type==='category'&&!item.categoryId){ElMessage.warning('请选择商品分类');return}
@@ -90,7 +106,11 @@ async function save(){
  }
  saving.value=true
  try{
-  const navItems=items.value.map(({editorId,...item})=>({...item,label:item.label.trim()}))
+  const navItems=items.value.map(({editorId,...item})=>{
+   const names={}
+   for(const [k,v] of Object.entries(item.names||{})) if(typeof v==='string'&&v.trim()) names[k]=v.trim()
+   return {...item,names,label:item.label.trim()}
+  })
   await api('/api/admin/site-config',{method:'PUT',body:JSON.stringify({navItems,navigationConfigured:true})})
   ElMessage.success('导航已保存，刷新前台即可生效')
  }catch(e){ElMessage.error(e.message)}finally{saving.value=false}
@@ -99,4 +119,5 @@ onMounted(load)
 </script>
 <style scoped>
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.help{color:var(--adm-text-3);font-size:12px;line-height:1.8;margin:6px 0 16px}
+.nav-names{margin-top:8px;border-top:none;border-bottom:none}
 </style>

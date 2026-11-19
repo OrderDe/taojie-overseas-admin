@@ -18,14 +18,17 @@
         </el-select>
       </el-form-item>
       <el-form-item label="首页大标题">
-        <el-input v-model="cfg.heroTitle" placeholder="首页最上方那行最大的字，留空则首页不显示这行字" />
+        <span class="note" style="margin-left: 0">首页最上方那行最大的字，按语言填写，前台随访客语言切换；都留空则首页不显示这行字</span>
       </el-form-item>
+      <NamesFields :model="cfg.heroTitleI18n" />
       <el-form-item label="首页副标题">
-        <el-input v-model="cfg.heroSubtitle" placeholder="大标题下面那行说明文字，留空则首页不显示这行字" />
+        <span class="note" style="margin-left: 0">大标题下面那行说明文字，按语言填写；都留空则不显示</span>
       </el-form-item>
+      <NamesFields :model="cfg.heroSubtitleI18n" />
       <el-form-item label="公告">
-        <el-input v-model="cfg.announcement" />
+        <span class="note" style="margin-left: 0">顶栏那行小字，按语言填写；都留空则用前台默认公告</span>
       </el-form-item>
+      <NamesFields :model="cfg.announcementI18n" />
       <el-form-item label="WhatsApp">
         <el-input v-model="cfg.whatsapp" placeholder="如 +27 82 000 0000" />
       </el-form-item>
@@ -62,8 +65,9 @@
 
       <el-divider content-position="left">首页顶部（其他）</el-divider>
       <el-form-item label="大标题上方小字">
-        <el-input v-model="cfg.heroEyebrow" placeholder="如 F · EDITORIAL WHOLESALE，留空则不显示" />
+        <span class="note" style="margin-left: 0">如 F · EDITORIAL WHOLESALE，按语言填写；都留空则不显示</span>
       </el-form-item>
+      <NamesFields :model="cfg.heroEyebrowI18n" />
       <el-form-item label="搜索框提示字">
         <span class="note" style="margin-left: 0">顶栏搜索框里的灰色提示字，按语言填写；留空的语言用默认文案</span>
       </el-form-item>
@@ -146,6 +150,7 @@ const BASE_CURRENCIES = [
 const cfg = reactive({
   logo: '', defaultLanguage: 'en', heroTitle: '', heroSubtitle: '',
   announcement: '', whatsapp: '', email: '', currency: '$', baseCurrency: 'CNY', showRfq: true, showCart: false, showPrices: true, showDealer: false, showContact: true,
+  heroTitleI18n: {}, heroSubtitleI18n: {}, announcementI18n: {}, heroEyebrowI18n: {},
   heroEyebrow: '', searchPlaceholder: {}, dealerTitle: '', dealerText: '',
   dealerButton: '', hotline: '', salesBtnAction: 'contact', storyTitle: '', storyText: '',
   tiktok: '', instagram: '', facebook: '', youtube: '', wechat: ''
@@ -171,7 +176,19 @@ async function load() {
 
 }
 
+// The storefront prefers the I18n maps; the legacy single-language
+// fields stay as the fallback for older consumers, so keep them in
+// sync at save time: zh wins, then en, else empty.
+function syncLegacyFromI18n() {
+  const pick = (map) => ((map && (map.zh || map.en)) || '')
+  cfg.heroTitle = pick(cfg.heroTitleI18n)
+  cfg.heroSubtitle = pick(cfg.heroSubtitleI18n)
+  cfg.announcement = pick(cfg.announcementI18n)
+  cfg.heroEyebrow = pick(cfg.heroEyebrowI18n)
+}
+
 async function onSave() {
+  syncLegacyFromI18n()
   saving.value = true
   try {
     const r = await run(api('/api/admin/site-config', {
