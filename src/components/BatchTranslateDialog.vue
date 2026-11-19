@@ -1,9 +1,11 @@
 <template>
   <!-- Shared progress dialog for the「批量翻译未译名称」button on the
        products / categories / brands lists. Opening the dialog starts
-       the run (via utils/batchTranslate.js, MyMemory pinned); closing
-       it mid-run is disabled so a half-finished batch is never hidden.
-       Emits `done` when the run ends so the list page can reload. -->
+       the run (via utils/batchTranslate.js, MyMemory pinned). Backdrop
+       / ESC closing is blocked mid-run, but the footer cancel button
+       is always available: mid-run it stops the batch cooperatively
+       (between items) and lands on the summary. Emits `done` when the
+       run ends so the list page can reload. -->
   <el-dialog
     v-model="visible"
     :title="`批量翻译未译名称（${entityLabel}）`"
@@ -21,6 +23,14 @@
       show-icon
       title="可能今日免费额度已用完，已完成的部分都已保存，过段时间或明天再点一次会接着补剩下的"
     />
+    <el-alert
+      v-if="stopped"
+      class="quota-alert"
+      type="info"
+      :closable="false"
+      show-icon
+      title="已停止，已完成的部分已保存；下次再点一次会接着补剩下的"
+    />
     <div class="progress-line">
       已处理 {{ state.processed }} / 共 {{ state.total }} 条 · 已补齐 {{ state.filled }} 条 · 失败 {{ state.failedCount }} 项
     </div>
@@ -33,7 +43,7 @@
     <template v-else>
       <p class="summary">
         共 {{ summary.total }} 条：需补译 {{ summary.candidates }} 条，已跳过（已全部译完或无中文名）
-        {{ summary.skipped }} 条，本次补齐并保存 {{ summary.filled }} 条<template v-if="quotaStopped">，因疑似额度用完提前停止</template>。
+        {{ summary.skipped }} 条，本次补齐并保存 {{ summary.filled }} 条<template v-if="quotaStopped">，因疑似额度用完提前停止</template><template v-else-if="stopped">，已按你的操作停止</template>。
       </p>
       <div v-if="summary.failures.length" class="fail-box">
         <div class="fail-title">失败明细（{{ summary.failures.length }} 项）</div>
@@ -45,7 +55,12 @@
       </div>
     </template>
     <template #footer>
-      <el-button :disabled="running" @click="visible = false">{{ finished ? '关闭' : '取消' }}</el-button>
+      <!-- Never disabled (ZenTao #3): before/after a run it closes the
+           dialog; during a run it requests a cooperative stop — the
+           batch loop checks the flag between items and then shows the
+           normal summary. (Modal-backdrop / ESC closing stays blocked
+           mid-run via the dialog props above.) -->
+      <el-button @click="onCancelOrClose">{{ footerLabel }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -70,8 +85,26 @@ const visible = computed({
 const running = ref(false)
 const finished = ref(false)
 const quotaStopped = ref(false)
+const stopped = ref(false)
+const stopRequested = ref(false)
 const state = reactive({ total: 0, processed: 0, filled: 0, failedCount: 0 })
 const summary = ref({ total: 0, candidates: 0, skipped: 0, filled: 0, failures: [] })
+
+const footerLabel = computed(() => {
+  if (finished.value) return '关闭'
+  if (running.value && stopRequested.value) return '正在停止…'
+  return '取消'
+})
+
+function onCancelOrClose() {
+  if (running.value) {
+    // Cooperative stop: the loop notices between items and wraps up
+    // with the summary; the dialog itself stays open until then.
+    stopRequested.value = true
+  } else {
+    visible.value = false
+  }
+}
 
 const percentage = computed(() =>
   state.total ? Math.round((state.processed / state.total) * 100) : (finished.value ? 100 : 0)
@@ -87,11 +120,16 @@ async function start() {
   running.value = true
   finished.value = false
   quotaStopped.value = false
+  stopped.value = false
+  stopRequested.value = false
   Object.assign(state, { total: 0, processed: 0, filled: 0, failedCount: 0 })
   try {
-    const s = await runBatchTranslate(props.kind, (p) => Object.assign(state, p))
+    const s = await runBatchTranslate(props.kind, (p) => Object.assign(state, p), {
+      shouldStop: () => stopRequested.value
+    })
     summary.value = s
     quotaStopped.value = s.quotaStopped
+    stopped.value = !!s.stopped
     if (!s.candidates) ElMessage.info('没有需要补译的名称（都已译完或没有中文名）')
   } catch (e) {
     summary.value = { total: 0, candidates: 0, skipped: 0, filled: 0, failures: [{ name: props.entityLabel, message: e.message || '批量翻译失败' }] }

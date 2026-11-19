@@ -43,7 +43,11 @@ const canTranslate = computed(() => !!(props.model.zh || '').trim())
 
 // One-shot translation at entry time: the backend returns every other
 // registry language for the Chinese name; only still-empty fields are
-// filled, never overwritten.
+// filled, never overwritten. The provider is pinned to MyMemory (same
+// as the batch translator): the backend default is the self-hosted
+// LibreTranslate, which is not running in every environment — relying
+// on the default made this button fail with a 502 (ZenTao #27). No
+// silent fallback: if MyMemory fails, the error surfaces as before.
 async function onTranslate() {
   const text = (props.model.zh || '').trim()
   if (!text || translating.value) return
@@ -51,7 +55,7 @@ async function onTranslate() {
   try {
     const r = await api('/api/admin/translate', {
       method: 'POST',
-      body: JSON.stringify({ text, targets: TARGET_CODES })
+      body: JSON.stringify({ text, targets: TARGET_CODES, provider: 'mymemory' })
     })
     const translations = (r && r.translations) || {}
     let filled = 0

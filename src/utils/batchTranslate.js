@@ -64,8 +64,12 @@ const langName = (code) => (langByCode(code) || {}).name || code
 /**
  * Run one batch. `onProgress(state)` is called after every item with
  * { total, processed, filled, failedCount } so the dialog can render
- * live progress. Resolves to a summary:
- * { total, candidates, skipped, processed, filled, failures, quotaStopped }
+ * live progress. `options.shouldStop` (optional) is polled between
+ * items for cooperative cancellation from the dialog's cancel button:
+ * when it returns true the loop ends after the current item and the
+ * summary carries `stopped: true` — work already saved stays saved.
+ * Resolves to a summary:
+ * { total, candidates, skipped, processed, filled, failures, quotaStopped, stopped }
  * failures: [{ name, lang?, message }] — per-language entries carry the
  * language name in `lang`; whole-item entries (translate/save failed)
  * leave it empty.
@@ -75,7 +79,8 @@ const langName = (code) => (langByCode(code) || {}).name || code
  * Everything already saved stays saved, and a later run simply picks
  * up the items that are still incomplete, so the batch is resumable.
  */
-export async function runBatchTranslate(kind, onProgress) {
+export async function runBatchTranslate(kind, onProgress, options = {}) {
+  const shouldStop = typeof options.shouldStop === 'function' ? options.shouldStop : null
   const cfg = BATCH_KINDS[kind]
   if (!cfg) throw new Error(`unknown batch kind: ${kind}`)
   const items = (await api(cfg.endpoint)) || []
@@ -86,7 +91,8 @@ export async function runBatchTranslate(kind, onProgress) {
     processed: 0,
     filled: 0,
     failures: [],
-    quotaStopped: false
+    quotaStopped: false,
+    stopped: false
   }
   const emit = () => {
     if (onProgress) {
@@ -109,6 +115,12 @@ export async function runBatchTranslate(kind, onProgress) {
   emit()
 
   for (const { item, missing } of jobs) {
+    // Cooperative cancel: checked between items, never mid-request, so
+    // an in-flight item always finishes (and saves) cleanly.
+    if (shouldStop && shouldStop()) {
+      summary.stopped = true
+      break
+    }
     const label = displayName(item.names)
     let r
     try {
