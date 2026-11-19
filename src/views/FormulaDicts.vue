@@ -12,6 +12,7 @@
     </div>
 
     <el-table :data="rows" v-loading="loading" stripe>
+      <el-table-column label="ID" width="90" prop="id" show-overflow-tooltip />
       <el-table-column v-for="f in current.fields" :key="f.key" :label="f.label" :min-width="f.width || 130">
         <template #default="{ row }">
           <el-image v-if="f.type === 'image' && row[f.key]" :src="row[f.key]" class="thumb" fit="contain" />
@@ -30,8 +31,8 @@
     <el-pagination style="margin-top: 14px" layout="total, prev, pager, next" :total="total" :page-size="pageSize" v-model:current-page="page" @current-change="load" />
 
     <el-dialog v-model="dialogVisible" :title="`${editingId ? '编辑' : '新建'}${current.label}`" width="540px" destroy-on-close>
-      <el-form :model="form" label-width="90px">
-        <el-form-item v-for="f in current.fields" :key="f.key" :label="f.label">
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="90px">
+        <el-form-item v-for="f in current.fields" :key="f.key" :label="f.label" :prop="f.key">
           <el-switch v-if="f.type === 'switch'" v-model="form[f.key]" />
           <el-input-number v-else-if="f.type === 'number'" v-model="form[f.key]" :step="1" />
           <ImageField v-else-if="f.type === 'image'" v-model="form[f.key]" />
@@ -55,26 +56,32 @@ import ImageField from '../components/ImageField.vue'
 // Tabbed simple-CRUD over the formula dictionary entities; each tab is
 // a field config driving both the table and the dialog, against the
 // backend's config-driven /api/admin/formula/<entity> endpoints.
+// `required` drives the dialog's el-form rules (the backend validates
+// the same text fields again server-side). state/sortRank are required
+// in the form but carry defaults, so they never block a save.
 const CONFIGS = [
   {
     key: 'car-countries', label: '国家', searchPh: '国家 / 英文名',
+    required: ['name', 'nameEn', 'language', 'code', 'state', 'sortRank'],
     fields: [
       { key: 'name', label: '国家', width: 150 }, { key: 'nameEn', label: '英文名', width: 150 },
       { key: 'language', label: '语言', width: 110 }, { key: 'code', label: '编码', type: 'number', width: 90 },
-      { key: 'state', label: '状态', type: 'number', width: 90 }, { key: 'sortRank', label: '排序', type: 'number', width: 90 },
+      { key: 'state', label: '状态', type: 'number', width: 90, default: 1 }, { key: 'sortRank', label: '排序', type: 'number', width: 90, default: 0 },
       { key: 'enable', label: '启用', type: 'switch', width: 86 }
     ]
   },
   {
     key: 'car-factories', label: '生产商', searchPh: '生产商名',
+    required: ['name', 'brandId', 'country', 'state', 'sortRank'],
     fields: [
       { key: 'name', label: '生产商', width: 180 }, { key: 'brandId', label: '品牌 ID', type: 'number', width: 110 },
-      { key: 'country', label: '国家', width: 120 }, { key: 'state', label: '状态', type: 'number', width: 90 },
-      { key: 'sortRank', label: '排序', type: 'number', width: 90 }, { key: 'enable', label: '启用', type: 'switch', width: 86 }
+      { key: 'country', label: '国家', width: 120 }, { key: 'state', label: '状态', type: 'number', width: 90, default: 1 },
+      { key: 'sortRank', label: '排序', type: 'number', width: 90, default: 0 }, { key: 'enable', label: '启用', type: 'switch', width: 86 }
     ]
   },
   {
     key: 'color-cards', label: '色卡', searchPh: '名称 / 编码',
+    required: ['name', 'code'],
     fields: [
       { key: 'name', label: '名称', width: 200 }, { key: 'code', label: '编码', width: 160 },
       { key: 'enable', label: '启用', type: 'switch', width: 86 }
@@ -82,6 +89,7 @@ const CONFIGS = [
   },
   {
     key: 'color-brands', label: '产品品牌', searchPh: '品牌名',
+    required: ['name', 'logo'],
     fields: [
       { key: 'name', label: '品牌', width: 200 }, { key: 'logo', label: 'Logo', type: 'image', width: 130 },
       { key: 'enable', label: '启用', type: 'switch', width: 86 }
@@ -101,12 +109,21 @@ const keyword = ref('')
 const dialogVisible = ref(false)
 const editingId = ref('')
 const form = reactive({})
+const formRef = ref(null)
+const formRules = computed(() => {
+  const rules = {}
+  for (const key of current.value.required || []) {
+    const f = current.value.fields.find((x) => x.key === key)
+    rules[key] = [{ required: true, message: `${f ? f.label : key}必填`, trigger: f && f.type === 'image' ? 'change' : 'blur' }]
+  }
+  return rules
+})
 
 function resetForm(source = {}) {
   for (const k of Object.keys(form)) delete form[k]
   for (const f of current.value.fields) {
     if (f.type === 'switch') form[f.key] = source[f.key] === undefined ? true : !!source[f.key]
-    else if (f.type === 'number') form[f.key] = source[f.key] ?? null
+    else if (f.type === 'number') form[f.key] = source[f.key] ?? f.default ?? null
     else form[f.key] = source[f.key] || ''
   }
 }
@@ -140,6 +157,13 @@ function openEdit(row) {
 }
 
 async function onSave() {
+  if (formRef.value) {
+    try {
+      await formRef.value.validate()
+    } catch {
+      return
+    }
+  }
   saving.value = true
   try {
     const payload = { ...form }

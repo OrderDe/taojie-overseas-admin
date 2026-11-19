@@ -14,6 +14,7 @@
     </div>
 
     <el-table :data="rows" v-loading="loading" stripe>
+      <el-table-column label="ID" width="90" prop="id" show-overflow-tooltip />
       <el-table-column label="车型图" width="96">
         <template #default="{ row }">
           <el-image v-if="row.carImage" :src="row.carImage" class="thumb" fit="cover" />

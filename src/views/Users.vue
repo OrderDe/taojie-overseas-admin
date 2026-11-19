@@ -160,7 +160,14 @@ const roleIsBuiltin = computed(() => {
 })
 
 function fmt(row) {
-  return String(row.created_at || row.createTime || '').replace('T', ' ').slice(0, 16)
+  // Backend returns `createdAt` (the old code read created_at/createTime,
+  // which never exist on this payload, so the column was always blank).
+  const v = row.createdAt ?? row.createTime ?? row.created_at
+  if (v === null || v === undefined || v === '') return ''
+  const d = new Date(typeof v === 'number' ? v : String(v).replace(' ', 'T'))
+  if (Number.isNaN(d.getTime())) return String(v).replace('T', ' ').slice(0, 16)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
 function permLabels(role) {

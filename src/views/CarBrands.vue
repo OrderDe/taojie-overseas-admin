@@ -8,6 +8,7 @@
     </div>
 
     <el-table :data="rows" v-loading="loading" stripe>
+      <el-table-column label="ID" width="90" prop="id" show-overflow-tooltip />
       <el-table-column label="品牌" min-width="180" prop="name" />
       <el-table-column label="首字母" width="90" prop="nameFirst" />
       <el-table-column label="国家" width="110" prop="country" />

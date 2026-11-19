@@ -10,6 +10,7 @@
     <BatchTranslateDialog v-model="batchVisible" kind="brands" entityLabel="品牌" @done="load" />
 
     <el-table :data="paged" v-loading="loading" stripe>
+      <el-table-column label="ID" width="90" prop="id" show-overflow-tooltip />
       <el-table-column label="Logo" width="90">
         <template #default="{ row }">
           <el-image v-if="row.logo" :src="row.logo" class="thumb" fit="contain" />
@@ -19,7 +20,6 @@
       <el-table-column label="品牌名" min-width="220">
         <template #default="{ row }">{{ displayName(row.names) }}</template>
       </el-table-column>
-      <el-table-column label="ID" width="160" prop="id" />
       <el-table-column label="商品数" width="100" prop="count" />
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
@@ -48,7 +48,7 @@
           <el-input
             v-model="form.id"
             :disabled="!!editingId"
-            placeholder="可留空自动生成；只允许字母、数字、- 和 _"
+            placeholder="可留空自动生成顺序号；只允许字母、数字、- 和 _"
           />
         </el-form-item>
         <NamesFields :model="form.names" />

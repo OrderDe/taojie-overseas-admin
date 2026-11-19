@@ -8,6 +8,7 @@
     </div>
 
     <el-table :data="rows" v-loading="loading" stripe>
+      <el-table-column label="ID" width="90" prop="id" show-overflow-tooltip />
       <el-table-column label="色号" min-width="150" prop="name" />
       <el-table-column label="颜色名" min-width="200" prop="colorName" />
       <el-table-column label="LAB" min-width="190">
@@ -50,11 +51,24 @@
 
     <el-drawer v-model="drawerVisible" :title="`配方行 · ${drawerNumber?.name || ''}`" size="640px" destroy-on-close>
       <el-table :data="lines" v-loading="linesLoading" stripe>
-        <el-table-column label="色母型号" min-width="130">
-          <template #default="{ row }"><el-input v-model="row.model" size="small" /></template>
-        </el-table-column>
-        <el-table-column label="色母名称" min-width="130">
-          <template #default="{ row }"><el-input v-model="row.name" size="small" /></template>
+        <el-table-column label="色母（型号 — 名称）" min-width="250">
+          <template #default="{ row }">
+            <el-select
+              v-model="row.model"
+              filterable
+              size="small"
+              placeholder="选择色母（可按型号/名称搜索）"
+              style="width: 100%"
+              @change="(v) => onMasterbatchChange(row, v)"
+            >
+              <el-option
+                v-for="m in masterbatchOptionsFor(row)"
+                :key="m.model"
+                :label="`${m.model} — ${m.name}`"
+                :value="m.model"
+              />
+            </el-select>
+          </template>
         </el-table-column>
         <el-table-column label="剂量" width="130">
           <template #default="{ row }"><el-input-number v-model="row.dose" size="small" :step="0.1" :min="0" controls-position="right" style="width: 100%" /></template>
@@ -103,6 +117,43 @@ const linesLoading = ref(false)
 const linesSaving = ref(false)
 const doseTotal = computed(() => lines.value.reduce((s, l) => s + (Number(l.dose) || 0), 0))
 
+// Masterbatch picker for formula lines (bug #13): options come from
+// the masterbatch library, ENABLED rows only (the API exposes enable
+// as a boolean); picking one fills both the stored model and name.
+const masterbatches = ref([])
+
+async function loadMasterbatches() {
+  try {
+    const all = []
+    let p = 1
+    for (;;) {
+      const r = await api(`/api/admin/formula/masterbatches?page=${p}&pageSize=200`)
+      all.push(...(r?.list || []))
+      if (all.length >= (r?.total || 0) || !(r?.list || []).length) break
+      p++
+    }
+    masterbatches.value = all
+      .filter((m) => m.enable === true && m.model)
+      .map((m) => ({ model: String(m.model), name: m.name || '' }))
+  } catch { /* picker stays empty; lines keep their stored values */ }
+}
+
+function masterbatchOptionsFor(row) {
+  const opts = [...masterbatches.value]
+  // Echo for legacy lines whose masterbatch is disabled/deleted since:
+  // surface the stored pair as a fallback option so the select can
+  // still display (and keep) it.
+  if (row.model && !opts.some((m) => m.model === String(row.model))) {
+    opts.unshift({ model: String(row.model), name: row.name || '' })
+  }
+  return opts
+}
+
+function onMasterbatchChange(row, model) {
+  const found = masterbatches.value.find((m) => m.model === String(model))
+  if (found) row.name = found.name
+}
+
 async function load() {
   loading.value = true
   try {
@@ -150,7 +201,7 @@ async function onSave() {
 
 async function onDelete(row) {
   try {
-    await ElMessageBox.confirm(`确定删除色号「${row.name}」吗？其配方行不会自动删除。`, '删除确认', { type: 'warning' })
+    await ElMessageBox.confirm(`确定删除色号「${row.name}」吗？有配方行的色号会被后端拦下、删不了。`, '删除确认', { type: 'warning' })
   } catch { return }
   const r = await run(api(`/api/admin/formula-numbers/${encodeURIComponent(row.id)}`, { method: 'DELETE' }))
   if (r) { ElMessage.success('已删除'); load() }
@@ -159,6 +210,7 @@ async function onDelete(row) {
 async function openLines(row) {
   drawerNumber.value = row
   drawerVisible.value = true
+  loadMasterbatches()
   linesLoading.value = true
   try {
     const r = await api(`/api/admin/formula-numbers/${encodeURIComponent(row.id)}/lines`)

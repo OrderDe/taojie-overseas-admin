@@ -22,6 +22,15 @@
         </template>
       </el-table-column>
       <el-table-column label="排序" width="90" prop="sort" />
+      <el-table-column label="状态" width="90" align="center">
+        <template #default="{ row }">
+          <el-switch
+            v-model="row.active"
+            :loading="activeBusy.has(row.id)"
+            @change="(v) => toggleActive(row, v)"
+          />
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="240">
         <template #default="{ row }">
           <el-button v-if="row.level < 3" size="small" @click="openCreate(row)">新增子分类</el-button>
@@ -44,7 +53,7 @@
           <el-input
             v-model="form.id"
             :disabled="!!editingId"
-            placeholder="可留空自动生成；只允许字母、数字、- 和 _"
+            placeholder="可留空自动生成顺序号；只允许字母、数字、- 和 _"
           />
         </el-form-item>
         <el-form-item label="上级分类">
@@ -55,6 +64,10 @@
         <NamesFields :model="form.names" />
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :step="1" />
+        </el-form-item>
+        <el-form-item label="显示">
+          <el-switch v-model="form.active" />
+          <span class="hint">关闭后该分类不在前台显示</span>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -86,7 +99,8 @@ const saving = ref(false)
 const dialogVisible = ref(false)
 const batchVisible = ref(false)
 const editingId = ref('')
-const form = reactive({ id: '', parentId: '', names: emptyNames(), sort: 0 })
+const form = reactive({ id: '', parentId: '', names: emptyNames(), sort: 0, active: true })
+const activeBusy = ref(new Set())
 const selectedLevel = computed(() => form.parentId ? (rows.value.find(row => row.id === form.parentId)?.level || 0) + 1 : 1)
 const parentOptions = computed(() => {
   const descendants = descendantIds(rows.value, editingId.value)
@@ -115,7 +129,7 @@ async function load() {
 
 function openCreate(parent = null) {
   editingId.value = ''
-  Object.assign(form, { id: '', parentId: parent?.id || '', names: emptyNames(), sort: 0 })
+  Object.assign(form, { id: '', parentId: parent?.id || '', names: emptyNames(), sort: 0, active: true })
   dialogVisible.value = true
 }
 
@@ -125,9 +139,27 @@ function openEdit(row) {
     id: row.id,
     parentId: row.parentId || '',
     names: { ...emptyNames(), ...row.names },
-    sort: row.sort || 0
+    sort: row.sort || 0,
+    active: row.active !== false
   })
   dialogVisible.value = true
+}
+
+// Row-level 显示/隐藏 switch: full-payload update (names/sort/parent
+// backfilled from the row) so nothing else about the category changes.
+async function toggleActive(row, value) {
+  activeBusy.value = new Set(activeBusy.value).add(row.id)
+  try {
+    const payload = { names: row.names, sort: row.sort || 0, parentId: row.parentId || '', active: value }
+    const r = await run(api(`/api/admin/categories/${encodeURIComponent(row.id)}`, {
+      method: 'PUT', body: JSON.stringify(payload)
+    }))
+    if (!r) row.active = !value
+  } finally {
+    const next = new Set(activeBusy.value)
+    next.delete(row.id)
+    activeBusy.value = next
+  }
 }
 
 async function onSave() {
@@ -137,7 +169,7 @@ async function onSave() {
   }
   saving.value = true
   try {
-    const payload = { names: form.names, sort: form.sort, parentId: form.parentId || '' }
+    const payload = { names: form.names, sort: form.sort, parentId: form.parentId || '', active: form.active }
     let r
     if (editingId.value) {
       r = await run(api(`/api/admin/categories/${encodeURIComponent(editingId.value)}`, {
@@ -173,4 +205,5 @@ onMounted(load)
 
 <style scoped>
 .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
+.hint { margin-left: 10px; color: var(--adm-text-3); font-size: 12px; }
 </style>

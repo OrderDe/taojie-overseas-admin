@@ -11,6 +11,7 @@
     </div>
 
     <el-table :data="rows" v-loading="loading" stripe>
+      <el-table-column label="ID" width="90" prop="id" show-overflow-tooltip />
       <el-table-column label="车型" min-width="200" prop="model" />
       <el-table-column label="品牌" min-width="160">
         <template #default="{ row }">{{ brandName(row.brandId) || row.brand || '' }}</template>
@@ -33,7 +34,7 @@
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑车型' : '新建车型'" width="540px" destroy-on-close>
       <el-form :model="form" label-width="90px">
-        <el-form-item label="品牌">
+        <el-form-item label="品牌" required>
           <el-select v-model="form.brandId" filterable clearable placeholder="选择品牌" style="width: 100%">
             <el-option v-for="b in brandOptions" :key="b.id" :label="b.name" :value="b.id" />
           </el-select>
@@ -120,6 +121,7 @@ function openEdit(row) {
 }
 
 async function onSave() {
+  if (!form.brandId) { ElMessage.warning('品牌必选'); return }
   if (!form.model.trim()) { ElMessage.warning('车型必填'); return }
   saving.value = true
   try {
