@@ -36,13 +36,20 @@
       <el-button plain :disabled="!selected.length" :loading="savingNegotiable" @click="batchNegotiable(false)">
         批量取消面议{{ selected.length ? `（${selected.length}）` : '' }}
       </el-button>
+      <el-button type="success" plain :disabled="!selected.length" :loading="savingActive" @click="batchActive(true)">
+        批量上架{{ selected.length ? `（${selected.length}）` : '' }}
+      </el-button>
+      <el-button plain :disabled="!selected.length" :loading="savingActive" @click="batchActive(false)">
+        批量下架{{ selected.length ? `（${selected.length}）` : '' }}
+      </el-button>
     </div>
-    <p class="sort-hint">排序：数值越大越靠前（前台与本列表同序）。在下方「排序」列直接改数字后点「保存排序」；每行「置顶」会立即把该商品排到最前。面议：「面议」列开关可直接切换单个商品；勾选左侧多选框后可用工具栏批量设为/取消面议。</p>
+    <p class="sort-hint">排序：数值越大越靠前（前台与本列表同序）。在下方「排序」列直接改数字后点「保存排序」；每行「置顶」会立即把该商品排到最前。面议：「面议」列开关可直接切换单个商品；勾选左侧多选框后可用工具栏批量设为/取消面议。上下架：「状态」列开关可直接切换单个商品，勾选多选框后可用工具栏批量上架/下架；下架商品前台不显示。</p>
 
     <BatchTranslateDialog v-model="batchVisible" kind="products" entityLabel="商品" @done="loadAll" />
 
     <el-table :data="paged" v-loading="loading" stripe @selection-change="onSelectionChange">
       <el-table-column type="selection" width="46" />
+      <el-table-column label="ID" width="80" prop="id" show-overflow-tooltip />
       <el-table-column label="图片" width="76">
         <template #default="{ row }">
           <el-image v-if="row.image" :src="row.image" class="thumb" fit="cover" />
@@ -80,9 +87,13 @@
           <el-input-number v-model="row.sort" size="small" :step="1" controls-position="right" style="width: 108px" />
         </template>
       </el-table-column>
-      <el-table-column label="状态" width="90">
+      <el-table-column label="状态" width="90" align="center">
         <template #default="{ row }">
-          <el-tag :type="row.active ? 'success' : 'info'">{{ row.active ? '上架' : '下架' }}</el-tag>
+          <el-switch
+            v-model="row.active"
+            :loading="activeBusy.has(row.id)"
+            @change="(v) => toggleActive(row, v)"
+          />
         </template>
       </el-table-column>
       <el-table-column label="操作" width="215" fixed="right">
@@ -417,6 +428,65 @@ async function batchNegotiable(negotiable) {
     }
   } finally {
     savingNegotiable.value = false
+  }
+}
+
+// ---- On/off shelf (上架/下架) quick toggles ----
+// No dedicated endpoint exists, so toggling goes through the regular
+// product update with the full row as payload (same backfill approach
+// as batch translation) — every other field is preserved, only
+// `active` changes. A failed row toggle rolls the switch back; the
+// bulk buttons reload the list afterwards.
+const savingActive = ref(false)
+const activeBusy = ref(new Set())
+
+function activePayload(row, active) {
+  const payload = {
+    ...row,
+    active,
+    image: (Array.isArray(row.images) && row.images[0]) || row.image || '',
+    video: (Array.isArray(row.videos) && row.videos[0]) || row.video || '',
+    specs: row.specs || {}
+  }
+  delete payload.id
+  return payload
+}
+
+function applyActive(row, active) {
+  return run(api(`/api/admin/products/${row.id}`, {
+    method: 'PUT',
+    body: JSON.stringify(activePayload(row, active))
+  }))
+}
+
+async function toggleActive(row, value) {
+  activeBusy.value = new Set(activeBusy.value).add(row.id)
+  try {
+    const r = await applyActive(row, value)
+    if (!r) row.active = !value
+  } finally {
+    const next = new Set(activeBusy.value)
+    next.delete(row.id)
+    activeBusy.value = next
+  }
+}
+
+async function batchActive(active) {
+  const targets = selected.value.filter((p) => p.active !== active)
+  if (!targets.length) {
+    ElMessage.info(`所选商品已全部${active ? '上架' : '下架'}`)
+    return
+  }
+  savingActive.value = true
+  let ok = 0
+  try {
+    for (const row of targets) {
+      if (await applyActive(row, active)) ok++
+    }
+    if (ok) ElMessage.success(`已${active ? '上架' : '下架'} ${ok} 件商品`)
+    await loadAll()
+  } finally {
+    savingActive.value = false
   }
 }
 
